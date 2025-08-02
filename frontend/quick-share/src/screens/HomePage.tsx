@@ -124,9 +124,13 @@ function LoadingSpinner() {
 
 function HomePage() {
   const [isVisible, setIsVisible] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
+
+    const loggedIn = localStorage.getItem("isLoggedIn") === "true";
+    setIsLoggedIn(loggedIn);
 
     const style = document.createElement("style");
     style.textContent = `
@@ -148,6 +152,24 @@ function HomePage() {
         transform: translateY(-2px);
         background: #f0f0f0 !important;
       }
+      
+      .custom-nav-button {
+        border: 1px solid rgba(255,255,255,0.5);
+        border-radius: 20px;
+        padding: 8px 16px;
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: inline-block;
+      }
+      
+      .custom-nav-button:hover {
+        background: rgba(255,255,255,0.1);
+        border-color: white;
+        color: white;
+        text-decoration: none;
+      }
     `;
     document.head.appendChild(style);
 
@@ -157,6 +179,12 @@ function HomePage() {
       }
     };
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("userEmail");
+    setIsLoggedIn(false);
+  };
 
   const features = [
     {
@@ -229,23 +257,52 @@ function HomePage() {
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">
-            <Nav className="ms-auto">
+            <Nav className="ms-auto align-items-center">
               <Nav.Link as={Link} to="/" className="text-white mx-2">
                 Home
               </Nav.Link>
-              <Nav.Link as={Link} to="/tickets" className="text-white mx-2">
-                My Tickets
-              </Nav.Link>
-              <Nav.Link
-                as={Link}
-                to="/create-ticket"
-                className="text-white mx-2"
-              >
-                Create Ticket
-              </Nav.Link>
-              <Nav.Link as={Link} to="/dashboard" className="text-white mx-2">
-                Dashboard
-              </Nav.Link>
+              {isLoggedIn ? (
+                <>
+                  <Nav.Link as={Link} to="/tickets" className="text-white mx-2">
+                    My Tickets
+                  </Nav.Link>
+                  <Nav.Link
+                    as={Link}
+                    to="/create-ticket"
+                    className="text-white mx-2"
+                  >
+                    Create Ticket
+                  </Nav.Link>
+                  <Nav.Link
+                    as={Link}
+                    to="/dashboard"
+                    className="text-white mx-2"
+                  >
+                    Dashboard
+                  </Nav.Link>
+                  <Nav.Link as={Link} to="/profile" className="text-white mx-2">
+                    Profile
+                  </Nav.Link>
+                  <Button
+                    variant="outline-light"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="ms-2"
+                    style={{ borderRadius: "20px" }}
+                  >
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Nav.Link as={Link} to="/login" className="text-white mx-2">
+                    Login
+                  </Nav.Link>
+                  <Link to="/register" className="custom-nav-button ms-2">
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </Nav>
           </Navbar.Collapse>
         </Container>
@@ -268,36 +325,63 @@ function HomePage() {
                   support teams without unnecessary complexity.
                 </p>
                 <div className="d-flex gap-3 justify-content-center flex-wrap">
-                  <Button
-                    as="a"
-                    href="/create-ticket"
-                    size="lg"
-                    className="btn-custom-primary"
-                    style={{
-                      ...customStyles.customButton,
-                      background: "rgba(255,255,255,0.2)",
-                      border: "2px solid white",
-                      color: "white",
-                      backdropFilter: "blur(10px)",
-                      transition: "all 0.3s ease",
-                    }}
-                  >
-                    Create Your First Ticket
-                  </Button>
-                  <Button
-                    as="a"
-                    href="/tickets"
-                    variant="light"
-                    size="lg"
-                    className="btn-custom-secondary"
-                    style={{
-                      ...customStyles.customButton,
-                      color: "#667eea",
-                      transition: "all 0.3s ease",
-                    }}
-                  >
-                    View All Tickets
-                  </Button>
+                  {isLoggedIn ? (
+                    <>
+                      <Link
+                        to="/create-ticket"
+                        className="btn btn-lg btn-custom-primary text-decoration-none"
+                        style={{
+                          ...customStyles.customButton,
+                          background: "rgba(255,255,255,0.2)",
+                          border: "2px solid white",
+                          color: "white",
+                          backdropFilter: "blur(10px)",
+                          transition: "all 0.3s ease",
+                        }}
+                      >
+                        Create Your First Ticket
+                      </Link>
+                      <Link
+                        to="/tickets"
+                        className="btn btn-light btn-lg btn-custom-secondary text-decoration-none"
+                        style={{
+                          ...customStyles.customButton,
+                          color: "#667eea",
+                          transition: "all 0.3s ease",
+                        }}
+                      >
+                        View All Tickets
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to="/login"
+                        className="btn btn-lg btn-custom-primary text-decoration-none"
+                        style={{
+                          ...customStyles.customButton,
+                          background: "rgba(255,255,255,0.2)",
+                          border: "2px solid white",
+                          color: "white",
+                          backdropFilter: "blur(10px)",
+                          transition: "all 0.3s ease",
+                        }}
+                      >
+                        Get Started - Login
+                      </Link>
+                      <Link
+                        to="/register"
+                        className="btn btn-light btn-lg btn-custom-secondary text-decoration-none"
+                        style={{
+                          ...customStyles.customButton,
+                          color: "#667eea",
+                          transition: "all 0.3s ease",
+                        }}
+                      >
+                        Sign Up Free
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </Col>
@@ -366,10 +450,9 @@ function HomePage() {
                 Join teams already using QuickDesk to deliver simple and
                 efficient support solutions.
               </p>
-              <Button
-                as="a"
-                href="/create-ticket"
-                size="lg"
+              <Link
+                to={isLoggedIn ? "/create-ticket" : "/login"}
+                className="btn btn-lg btn-custom-primary text-decoration-none"
                 style={{
                   ...customStyles.customButton,
                   background:
@@ -378,10 +461,9 @@ function HomePage() {
                   color: "white",
                   transition: "all 0.3s ease",
                 }}
-                className="btn-custom-primary"
               >
-                Get Started Now
-              </Button>
+                {isLoggedIn ? "Create Your First Ticket" : "Get Started Now"}
+              </Link>
             </Col>
           </Row>
         </Container>

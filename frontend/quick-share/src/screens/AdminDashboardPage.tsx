@@ -87,7 +87,18 @@ interface UpgradeRequest {
   reason: string;
   requestDate: string;
 }
-
+interface DashboardStats {
+  total_tickets: number;
+  open_tickets: number;
+  in_progress_tickets: number;
+  resolved_tickets: number;
+  closed_tickets: number;
+  urgent_tickets: number;
+  total_users: number;
+  active_agents: number;
+  avg_response_time: number;
+  tickets_today: number;
+}
 function AdminDashboardPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState("End User");

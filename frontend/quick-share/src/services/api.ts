@@ -229,6 +229,206 @@ class ApiService {
     return response.json();
   }
 
+
+
+
+
+  async deleteCategory(categoryId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/categories/${categoryId}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      return {
+        success: true,
+        data: data,
+        message: "Category deleted successfully",
+      };
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      return {
+        success: false,
+        data: undefined,
+        message: "Failed to delete category",
+      };
+    }
+  }
+
+  // Tag Management
+  async getTags(): Promise<ApiResponse<Tag[]>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/tags`, {
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      return {
+        success: true,
+        data: data.tags || data.data || [],
+        message: "Tags retrieved successfully",
+      };
+    } catch (error) {
+      console.error("Error fetching tags:", error);
+      return {
+        success: false,
+        data: [],
+        message: "Failed to fetch tags",
+      };
+    }
+  }
+
+  async createTag(tagData: any): Promise<ApiResponse<Tag>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/tags`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(tagData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      return {
+        success: true,
+        data: data.tag || data,
+        message: "Tag created successfully",
+      };
+    } catch (error) {
+      console.error("Error creating tag:", error);
+      return {
+        success: false,
+        data: undefined,
+        message: "Failed to create tag",
+      };
+    }
+  }
+
+  async updateTag(tagId: string, tagData: any): Promise<ApiResponse<Tag>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/tags/${tagId}`, {
+        method: 'PUT',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(tagData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      return {
+        success: true,
+        data: data.tag || data,
+        message: "Tag updated successfully",
+      };
+    } catch (error) {
+      console.error("Error updating tag:", error);
+      return {
+        success: false,
+        data: undefined,
+        message: "Failed to update tag",
+      };
+    }
+  }
+
+  async deleteTag(tagId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/tags/${tagId}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      return {
+        success: true,
+        data: data,
+        message: "Tag deleted successfully",
+      };
+    } catch (error) {
+      console.error("Error deleting tag:", error);
+      return {
+        success: false,
+        data: undefined,
+        message: "Failed to delete tag",
+      };
+    }
+  }
+  async getStaffStats(userId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/staff/${userId}/stats`, {
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      return {
+        success: true,
+        data: data.stats || data,
+        message: "Staff stats retrieved successfully",
+      };
+    } catch (error) {
+      console.error("Error fetching staff stats:", error);
+      return {
+        success: false,
+        data: undefined,
+        message: "Failed to fetch staff stats",
+      };
+    }
+  }
+
+  async assignTicket(ticketId: string, agentId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/tickets/${ticketId}/assign`, {
+        method: 'PATCH',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ assigned_to: agentId }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      return {
+        success: true,
+        data: data,
+        message: "Ticket assigned successfully",
+      };
+    } catch (error) {
+      console.error("Error assigning ticket:", error);
+      return {
+        success: false,
+        data: undefined,
+        message: "Failed to assign ticket",
+      };
+    }
+  }
   async createTicket(data: CreateTicketData): Promise<ApiResponse<Ticket>> {
     const response = await fetch(`${API_BASE_URL}/api/tickets`, {
       method: 'POST',
@@ -287,24 +487,6 @@ class ApiService {
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to add reply');
-    }
-    
-    return response.json();
-  }
-
-  async assignTicket(ticketId: string, data: {
-    assigned_to: string;
-    notes?: string;
-  }): Promise<ApiResponse<any>> {
-    const response = await fetch(`${API_BASE_URL}/api/tickets/${ticketId}/assign`, {
-      method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to assign ticket');
     }
     
     return response.json();
@@ -379,34 +561,7 @@ class ApiService {
     return response.json();
   }
 
-  async deleteCategory(id: string): Promise<ApiResponse<any>> {
-    const response = await fetch(`${API_BASE_URL}/api/categories/${id}`, {
-      method: 'DELETE',
-      headers: this.getAuthHeaders()
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to delete category');
-    }
-    
-    return response.json();
-  }
-
   // Tags
-  async getTags(): Promise<ApiResponse<Tag[]>> {
-    const response = await fetch(`${API_BASE_URL}/api/tags`, {
-      method: 'GET',
-      headers: this.getAuthHeaders()
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch tags');
-    }
-    
-    return response.json();
-  }
 
   // Notifications
   async getNotifications(params?: {

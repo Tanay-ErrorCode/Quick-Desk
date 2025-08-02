@@ -154,11 +154,11 @@ function TicketReplyPage() {
           setAttachments(ticketResponse.attachments);
         }
       } else {
-        setAlertMessage("Ticket not found or you don't have permission to view it");
-        setAlertType("danger");
-        setShowAlert(true);
-        setTimeout(() => navigate("/dashboard"), 3000);
-        return;
+        // setAlertMessage("Ticket not found or you don't have permission to view it");
+        // setAlertType("danger");
+        // setShowAlert(true);
+        // setTimeout(() => navigate("/dashboard"), 3000);
+        // return;
       }
 
       // Load attachments separately if not included
@@ -382,12 +382,12 @@ function TicketReplyPage() {
   const canModifyTicket = () => {
     return userRole === "Admin" || 
            userRole === "Support Agent" || 
-           (ticket && ticket.author.id === userId);
+           (ticket && ticket?.author.id === userId);
   };
 
   const canPickupTicket = () => {
     return (userRole === "Support Agent" || userRole === "Admin") && 
-           ticket && !ticket.assigned_to;
+           ticket && !ticket?.assigned_to;
   };
 
   if (isLoading) {
@@ -406,7 +406,7 @@ function TicketReplyPage() {
     );
   }
 
-  if (!ticket) {
+  if (!isLoading && !ticket) {
     return (
       <>
         <Navigation />
@@ -454,7 +454,7 @@ function TicketReplyPage() {
                     <li className="breadcrumb-item">
                       <Link to="/forum">Tickets</Link>
                     </li>
-                    <li className="breadcrumb-item active">#{ticket.id}</li>
+                    <li className="breadcrumb-item active">#{ticket?.id}</li>
                   </ol>
                 </nav>
               </div>
@@ -468,7 +468,7 @@ function TicketReplyPage() {
                     📋 Pick Up Ticket
                   </Button>
                 )}
-                {(userRole === "Support Agent" || userRole === "Admin") && ticket.assigned_to && (
+                {(userRole === "Support Agent" || userRole === "Admin") && ticket?.assigned_to && (
                   <Dropdown>
                     <Dropdown.Toggle variant="outline-primary" style={customStyles.customButton}>
                       ⚙️ Actions
@@ -500,7 +500,7 @@ function TicketReplyPage() {
             {/* Main Ticket Card */}
             <Card style={customStyles.ticketCard} className="mb-4">
               {/* Urgent Banner */}
-              {ticket.is_urgent && (
+              {ticket?.is_urgent && (
                 <div style={customStyles.urgentBanner}>
                   <h6 className="mb-0">🚨 URGENT TICKET 🚨</h6>
                   <small>This ticket requires immediate attention</small>
@@ -513,26 +513,26 @@ function TicketReplyPage() {
                   <div className="flex-grow-1">
                     <div className="d-flex align-items-center mb-2">
                       <h3 className="fw-bold text-dark mb-0 me-3">
-                        #{ticket.id} {ticket.title}
+                        #{ticket?.id} {ticket?.title}
                       </h3>
-                      <Badge bg={getStatusColor(ticket.status)} className="me-2">
-                        {getStatusText(ticket.status)}
+                      <Badge bg={getStatusColor(ticket?.status)} className="me-2">
+                        {getStatusText(ticket?.status)}
                       </Badge>
-                      <Badge bg={getPriorityColor(ticket.priority)}>
-                        {ticket.priority.toUpperCase()} Priority
+                      <Badge bg={getPriorityColor(ticket?.priority)}>
+                        {ticket?.priority.toUpperCase()} Priority
                       </Badge>
                     </div>
                     <div className="text-muted mb-3">
                       <small>
-                        Created by <strong>{ticket.author.name}</strong> on {formatDate(ticket.created_at)}
-                        {ticket.assigned_to && (
-                          <> • Assigned to <strong>{ticket.assigned_to.name}</strong></>
+                        Created by <strong>{ticket?.author.name}</strong> on {formatDate(ticket?.created_at)}
+                        {ticket?.assigned_to && (
+                          <> • Assigned to <strong>{ticket?.assigned_to.name}</strong></>
                         )}
                       </small>
                     </div>
                     <div className="d-flex gap-2 mb-3">
-                      <Badge bg="secondary">{ticket.category?.name || 'General'}</Badge>
-                      {ticket.tags?.map((tag: any, index: number) => (
+                      <Badge bg="secondary">{ticket?.category?.name || 'General'}</Badge>
+                      {ticket?.tags?.map((tag: any, index: number) => (
                         <Badge key={index} bg="light" text="dark">
                           {tag.name}
                         </Badge>
@@ -546,7 +546,7 @@ function TicketReplyPage() {
                   <h5 className="fw-bold mb-3">Description</h5>
                   <div className="bg-light p-3 rounded">
                     <p className="mb-0" style={{ whiteSpace: "pre-wrap" }}>
-                      {ticket.description}
+                      {ticket?.description}
                     </p>
                   </div>
                 </div>
@@ -654,7 +654,7 @@ function TicketReplyPage() {
                 )}
 
                 {/* Add Reply Form */}
-                {isLoggedIn && ticket.status !== "closed" && (
+                {isLoggedIn && ticket?.status !== "closed" && (
                   <Form onSubmit={handleReplySubmit}>
                     <h6 className="fw-bold mb-3">Add a Reply</h6>
                     
@@ -722,7 +722,7 @@ function TicketReplyPage() {
                   </Form>
                 )}
 
-                {ticket.status === "closed" && (
+                {ticket?.status === "closed" && (
                   <Alert variant="info" className="mt-3">
                     <strong>This ticket is closed.</strong> No new replies can be added.
                   </Alert>
@@ -741,43 +741,43 @@ function TicketReplyPage() {
                 <ListGroup variant="flush">
                   <ListGroup.Item className="d-flex justify-content-between">
                     <span className="fw-bold">Status:</span>
-                    <Badge bg={getStatusColor(ticket.status)}>
-                      {getStatusText(ticket.status)}
+                    <Badge bg={getStatusColor(ticket?.status)}>
+                      {getStatusText(ticket?.status)}
                     </Badge>
                   </ListGroup.Item>
                   <ListGroup.Item className="d-flex justify-content-between">
                     <span className="fw-bold">Priority:</span>
-                    <Badge bg={getPriorityColor(ticket.priority)}>
-                      {ticket.priority.toUpperCase()}
+                    <Badge bg={getPriorityColor(ticket?.priority)}>
+                      {ticket?.priority.toUpperCase()}
                     </Badge>
                   </ListGroup.Item>
                   <ListGroup.Item className="d-flex justify-content-between">
                     <span className="fw-bold">Category:</span>
-                    <span>{ticket.category?.name || 'General'}</span>
+                    <span>{ticket?.category?.name || 'General'}</span>
                   </ListGroup.Item>
                   <ListGroup.Item className="d-flex justify-content-between">
                     <span className="fw-bold">Author:</span>
                     <div className="text-end">
-                      <div className="fw-bold">{ticket.author.name}</div>
-                      <small className="text-muted">{ticket.author.email}</small>
+                      <div className="fw-bold">{ticket?.author.name}</div>
+                      <small className="text-muted">{ticket?.author.email}</small>
                     </div>
                   </ListGroup.Item>
-                  {ticket.assigned_to && (
+                  {ticket?.assigned_to && (
                     <ListGroup.Item className="d-flex justify-content-between">
                       <span className="fw-bold">Assigned to:</span>
                       <div className="text-end">
-                        <div className="fw-bold">{ticket.assigned_to.name}</div>
-                        <small className="text-muted">{ticket.assigned_to.role}</small>
+                        <div className="fw-bold">{ticket?.assigned_to.name}</div>
+                        <small className="text-muted">{ticket?.assigned_to.role}</small>
                       </div>
                     </ListGroup.Item>
                   )}
                   <ListGroup.Item className="d-flex justify-content-between">
                     <span className="fw-bold">Created:</span>
-                    <span>{formatDate(ticket.created_at)}</span>
+                    <span>{formatDate(ticket?.created_at)}</span>
                   </ListGroup.Item>
                   <ListGroup.Item className="d-flex justify-content-between">
                     <span className="fw-bold">Last Updated:</span>
-                    <span>{formatDate(ticket.updated_at)}</span>
+                    <span>{formatDate(ticket?.updated_at)}</span>
                   </ListGroup.Item>
                   <ListGroup.Item className="d-flex justify-content-between">
                     <span className="fw-bold">Replies:</span>
@@ -797,7 +797,7 @@ function TicketReplyPage() {
                           setNewStatus("in_progress");
                           handleStatusChange();
                         }}
-                        disabled={ticket.status === "in_progress"}
+                        disabled={ticket?.status === "in_progress"}
                       >
                         🔄 Mark In Progress
                       </Button>
@@ -808,7 +808,7 @@ function TicketReplyPage() {
                           setNewStatus("resolved");
                           handleStatusChange();
                         }}
-                        disabled={ticket.status === "resolved"}
+                        disabled={ticket?.status === "resolved"}
                       >
                         ✅ Mark Resolved
                       </Button>
@@ -819,7 +819,7 @@ function TicketReplyPage() {
                           setNewStatus("closed");
                           handleStatusChange();
                         }}
-                        disabled={ticket.status === "closed"}
+                        disabled={ticket?.status === "closed"}
                       >
                         🔒 Close Ticket
                       </Button>

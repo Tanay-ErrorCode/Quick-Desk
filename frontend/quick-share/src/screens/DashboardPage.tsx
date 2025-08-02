@@ -107,6 +107,10 @@ function DashboardPage() {
         dashboardResponse = await apiService.getAdminDashboard();
       } else if (userRole === "Support Agent") {
         dashboardResponse = await apiService.getStaffDashboard();
+        // redirect to "/staff/dashboard" if needed
+        if (window.location.pathname !== "/staff/dashboard") {
+          navigate("/staff/dashboard");
+        }
       } else {
         dashboardResponse = await apiService.getUserDashboard();
       }

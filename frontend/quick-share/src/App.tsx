@@ -46,7 +46,6 @@ function App() {
           {/* Staff Routes */}
           <Route path="/staff/dashboard" element={<StaffDashboardPage />} />
 
-          <Route path="/tickets" element={<h2>My Tickets</h2>} />
           <Route path="*" element={<h2>Page Not Found</h2>} />
         </Routes>
       </div>

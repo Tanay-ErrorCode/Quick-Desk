@@ -1,60 +1,142 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Container,
   Row,
   Col,
   Card,
-  Form,
-  Button,
-  Pagination,
-  InputGroup,
   Badge,
+  Button,
+  Form,
+  Alert,
   Spinner,
+  InputGroup,
+  Dropdown,
 } from "react-bootstrap";
 import Navigation from "../components/Navigation";
 import { apiService, Ticket, Category } from "../services/api";
 
-interface TicketForumProps {}
+const customStyles = {
+  headerCard: {
+    borderRadius: "20px",
+    border: "none",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    color: "white",
+  },
+  ticketCard: {
+    borderRadius: "15px",
+    border: "1px solid #e9ecef",
+    transition: "all 0.3s ease",
+    marginBottom: "20px",
+  },
+  filterCard: {
+    borderRadius: "15px",
+    border: "none",
+    boxShadow: "0 5px 20px rgba(0,0,0,0.1)",
+  },
+  urgentBadge: {
+    animation: "pulse 2s infinite",
+  },
+};
 
-function TicketForumPage({}: TicketForumProps) {
+function TicketForumPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
-  const [showOpenOnly, setShowOpenOnly] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedStatus, setSelectedStatus] = useState("All");
-  const [selectedPriority, setSelectedPriority] = useState("All");
-  const [sortBy, setSortBy] = useState("Most Recent");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const ticketsPerPage = 10;
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState("End User");
+  const [userName, setUserName] = useState("User");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("created_at");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState<"success" | "danger" | "info">("success");
+  const navigate = useNavigate();
 
   useEffect(() => {
+    // Check login status
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
-    setIsLoggedIn(loggedIn);
+    const role = localStorage.getItem("userRole") || "End User";
+    const name = localStorage.getItem("userName") || "User";
     
+    setIsLoggedIn(loggedIn);
+    setUserRole(role);
+    setUserName(name);
+
     loadTickets();
     loadCategories();
-  }, []);
+  }, [statusFilter, priorityFilter, categoryFilter, searchTerm, sortBy, sortOrder, page]);
 
   const loadTickets = async () => {
     try {
       setIsLoading(true);
-      const response = await apiService.getTickets({
-        page: 1,
-        limit: 100, // Load more tickets for client-side filtering
-      });
       
-      if (response.success && response.tickets) {
-        setTickets(response.tickets);
-        setFilteredTickets(response.tickets);
+      const queryParams: any = {
+        page,
+        limit: 12,
+      };
+
+      if (statusFilter !== "all") {
+        queryParams.status = statusFilter;
       }
-    } catch (error) {
+
+      if (priorityFilter !== "all") {
+        queryParams.priority = priorityFilter;
+      }
+
+      if (categoryFilter !== "all") {
+        queryParams.category = categoryFilter;
+      }
+
+      if (searchTerm.trim()) {
+        queryParams.search = searchTerm.trim();
+      }
+
+      if (sortBy !== "created_at") {
+        queryParams.sort_by = sortBy;
+      }
+
+      if (sortOrder !== "desc") {
+        queryParams.sort_order = sortOrder;
+      }
+
+      // Force refresh by adding timestamp to bypass cache
+      queryParams._t = Date.now();
+
+      const response = await apiService.getTickets(queryParams);
+
+      if (response.success && response.data) {
+        if (page === 1) {
+          setTickets(response.data);
+        } else {
+          setTickets(prev => [...prev, ...(response.data ?? []) ]);
+        }
+
+        const extendedResponse = response as any;
+        setTotalCount(extendedResponse.total || response.data.length);
+        setHasMore(response.data.length === 12);
+      } else {
+        // Show fallback message
+        setAlertMessage("No tickets found or unable to load tickets.");
+        setAlertType("info");
+        setShowAlert(true);
+        setTimeout(() => setShowAlert(false), 5000);
+      }
+
+    } catch (error: any) {
       console.error("Error loading tickets:", error);
-      // Keep existing sample data as fallback
+      setAlertMessage("Failed to load tickets. Please try again.");
+      setAlertType("danger");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 5000);
     } finally {
       setIsLoading(false);
     }
@@ -71,74 +153,21 @@ function TicketForumPage({}: TicketForumProps) {
     }
   };
 
-  useEffect(() => {
-    let filtered = [...tickets];
+  const refreshTickets = () => {
+    setPage(1);
+    setTickets([]);
+    loadTickets();
+  };
 
-    // Filter by status
-    if (showOpenOnly) {
-      filtered = filtered.filter((ticket) => ticket.status === "open");
-    }
-
-    if (selectedStatus !== "All") {
-      filtered = filtered.filter((ticket) => ticket.status === selectedStatus);
-    }
-
-    // Filter by category
-    if (selectedCategory !== "All") {
-      filtered = filtered.filter(
-        (ticket) => ticket.category?.name === selectedCategory,
-      );
-    }
-
-    // Filter by priority
-    if (selectedPriority !== "All") {
-      filtered = filtered.filter((ticket) => ticket.priority === selectedPriority);
-    }
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (ticket) =>
-          ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          ticket.author.name.toLowerCase().includes(searchTerm.toLowerCase()),
-      );
-    }
-
-    // Sort tickets
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "Most Recent":
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        case "Most Comments":
-          return b.reply_count - a.reply_count;
-        case "Priority":
-          const priorityOrder = { high: 3, medium: 2, low: 1 };
-          return (priorityOrder[b.priority as keyof typeof priorityOrder] || 0) - 
-                 (priorityOrder[a.priority as keyof typeof priorityOrder] || 0);
-        default:
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      }
-    });
-
-    // Urgent tickets first
-    filtered.sort((a, b) => {
-      if (a.is_urgent && !b.is_urgent) return -1;
-      if (!a.is_urgent && b.is_urgent) return 1;
-      return 0;
-    });
-
-    setFilteredTickets(filtered);
-    setCurrentPage(1);
-  }, [
-    tickets,
-    showOpenOnly,
-    selectedCategory,
-    selectedStatus,
-    selectedPriority,
-    sortBy,
-    searchTerm,
-  ]);
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setPriorityFilter("all");
+    setCategoryFilter("all");
+    setSearchTerm("");
+    setSortBy("created_at");
+    setSortOrder("desc");
+    setPage(1);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -169,308 +198,336 @@ function TicketForumPage({}: TicketForumProps) {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffHours < 1) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
   };
-
-  // Pagination
-  const indexOfLastTicket = currentPage * ticketsPerPage;
-  const indexOfFirstTicket = indexOfLastTicket - ticketsPerPage;
-  const currentTickets = filteredTickets.slice(
-    indexOfFirstTicket,
-    indexOfLastTicket,
-  );
-  const totalPages = Math.ceil(filteredTickets.length / ticketsPerPage);
-
-  if (isLoading) {
-    return (
-      <>
-        <Navigation />
-        <Container className="py-4">
-          <div className="text-center py-5">
-            <Spinner animation="border" role="status" className="mb-3">
-              <span className="visually-hidden">Loading...</span>
-            </Spinner>
-            <p>Loading tickets...</p>
-          </div>
-        </Container>
-      </>
-    );
-  }
 
   return (
     <>
       <Navigation />
 
       <Container className="py-4">
-        {/* Header Section */}
+        {/* Header */}
         <Row className="mb-4">
           <Col>
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <div>
-                <h2 className="fw-bold text-dark mb-0">Support Tickets</h2>
-                <p className="text-muted mb-0">Browse and track support tickets</p>
-              </div>
-              {isLoggedIn && (
-                <Link
-                  to="/create-ticket"
-                  className="btn btn-primary"
-                  style={{ borderRadius: "25px" }}
-                >
-                  ➕ Create Ticket
-                </Link>
-              )}
-            </div>
+            <Card style={customStyles.headerCard}>
+              <Card.Body className="p-4">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h2 className="fw-bold mb-2">🎫 Support Tickets</h2>
+                    <p className="mb-0 opacity-75">Browse and manage support tickets</p>
+                  </div>
+                  <div className="d-flex gap-2">
+                    <Button 
+                      variant="outline-light" 
+                      onClick={refreshTickets}
+                      disabled={isLoading}
+                    >
+                      🔄 Refresh
+                    </Button>
+                    {isLoggedIn && (
+                      <Link to="/create-ticket" className="btn btn-light">
+                        ➕ Create Ticket
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </Card.Body>
+            </Card>
           </Col>
         </Row>
 
-        {/* Filters Section */}
-        <Card className="mb-4" style={{ borderRadius: "15px" }}>
-          <Card.Body className="p-4">
-            <Row className="g-3">
-              <Col lg={3} md={6}>
-                <Form.Check
-                  type="checkbox"
-                  label="Show open tickets only"
-                  checked={showOpenOnly}
-                  onChange={(e) => setShowOpenOnly(e.target.checked)}
-                  className="fw-medium"
-                />
-              </Col>
-              <Col lg={2} md={6}>
-                <Form.Select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  style={{ borderRadius: "10px" }}
-                >
-                  <option value="All">All Categories</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.name}>
-                      {category.icon} {category.name}
-                    </option>
-                  ))}
-                </Form.Select>
-              </Col>
-              <Col lg={2} md={6}>
-                <Form.Select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  style={{ borderRadius: "10px" }}
-                >
-                  <option value="All">All Status</option>
-                  <option value="open">Open</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
-                </Form.Select>
-              </Col>
-              <Col lg={2} md={6}>
-                <Form.Select
-                  value={selectedPriority}
-                  onChange={(e) => setSelectedPriority(e.target.value)}
-                  style={{ borderRadius: "10px" }}
-                >
-                  <option value="All">All Priority</option>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </Form.Select>
-              </Col>
-              <Col lg={2} md={6}>
-                <Form.Select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  style={{ borderRadius: "10px" }}
-                >
-                  <option value="Most Recent">Most Recent</option>
-                  <option value="Most Comments">Most Comments</option>
-                  <option value="Priority">Priority</option>
-                </Form.Select>
-              </Col>
-              <Col lg={1} md={6}>
-                <Button
-                  variant="outline-secondary"
-                  onClick={() => {
-                    setShowOpenOnly(true);
-                    setSelectedCategory("All");
-                    setSelectedStatus("All");
-                    setSelectedPriority("All");
-                    setSortBy("Most Recent");
-                    setSearchTerm("");
-                  }}
-                  style={{ borderRadius: "10px" }}
-                >
-                  Clear
-                </Button>
-              </Col>
-            </Row>
-            <Row className="mt-3">
-              <Col>
-                <InputGroup>
-                  <Form.Control
-                    type="text"
-                    placeholder="Search tickets..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{ borderRadius: "10px 0 0 10px" }}
-                  />
-                  <Button
-                    variant="outline-secondary"
-                    style={{ borderRadius: "0 10px 10px 0" }}
-                  >
-                    🔍
-                  </Button>
-                </InputGroup>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
+        {/* Alert */}
+        {showAlert && (
+          <Alert variant={alertType} className="mb-4">
+            {alertMessage}
+          </Alert>
+        )}
 
-        {/* Tickets List */}
         <Row>
-          {currentTickets.map((ticket) => (
-            <Col xs={12} className="mb-3" key={ticket.id}>
-              <Card
-                style={{ borderRadius: "15px", border: "1px solid #e9ecef", transition: "all 0.3s ease" }}
-                className="h-100 shadow-sm hover-shadow"
-              >
-                <Card.Body className="p-4">
-                  <Row>
-                    <Col xs={9}>
-                      <div className="d-flex align-items-center mb-2">
-                        {ticket.is_urgent && (
-                          <Badge bg="danger" className="me-2 small">
-                            🚨 URGENT
-                          </Badge>
-                        )}
-                        <h5 className="fw-bold text-dark mb-0">
-                          <Link
-                            to={`/ticket/${ticket.id}`}
-                            className="text-decoration-none text-dark"
-                          >
-                            #{ticket.id} {ticket.title}
-                          </Link>
-                        </h5>
-                      </div>
-                      <p className="text-muted mb-3">{ticket.description}</p>
+          {/* Filters Sidebar */}
+          <Col lg={3}>
+            <Card style={customStyles.filterCard} className="mb-4">
+              <Card.Header className="bg-light">
+                <h6 className="mb-0 fw-bold">🔍 Filters</h6>
+              </Card.Header>
+              <Card.Body className="p-3">
+                {/* Search */}
+                <div className="mb-3">
+                  <Form.Label className="small fw-bold">Search</Form.Label>
+                  <InputGroup size="sm">
+                    <Form.Control
+                      type="text"
+                      placeholder="Search tickets..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <Button variant="outline-secondary">🔍</Button>
+                  </InputGroup>
+                </div>
 
-                      {/* Tags */}
-                      <div className="mb-3">
-                        <Badge bg="secondary" className="me-2 mb-1">
-                          {ticket.category?.name || 'General'}
-                        </Badge>
-                        <Badge
-                          bg={getPriorityColor(ticket.priority)}
-                          className="me-2 mb-1"
-                        >
-                          {ticket.priority.toUpperCase()} Priority
-                        </Badge>
-                        {ticket.tags?.map((tag: any, index: number) => (
-                          <Badge
-                            key={index}
-                            bg="light"
-                            text="dark"
-                            className="me-2 mb-1"
-                            style={{ borderRadius: "15px" }}
-                          >
-                            {tag.name}
-                          </Badge>
-                        ))}
-                      </div>
+                {/* Status Filter */}
+                <div className="mb-3">
+                  <Form.Label className="small fw-bold">Status</Form.Label>
+                  <Form.Select
+                    size="sm"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="open">Open</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                  </Form.Select>
+                </div>
 
-                      <small className="text-muted">
-                        Created by {ticket.author.name} • {formatDate(ticket.created_at)}
-                        {ticket.assigned_to && (
-                          <> • Assigned to {ticket.assigned_to.name}</>
-                        )}
-                      </small>
+                {/* Priority Filter */}
+                <div className="mb-3">
+                  <Form.Label className="small fw-bold">Priority</Form.Label>
+                  <Form.Select
+                    size="sm"
+                    value={priorityFilter}
+                    onChange={(e) => setPriorityFilter(e.target.value)}
+                  >
+                    <option value="all">All Priority</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </Form.Select>
+                </div>
+
+                {/* Category Filter */}
+                <div className="mb-3">
+                  <Form.Label className="small fw-bold">Category</Form.Label>
+                  <Form.Select
+                    size="sm"
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                  >
+                    <option value="all">All Categories</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.icon} {category.name}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </div>
+
+                {/* Sort Options */}
+                <div className="mb-3">
+                  <Form.Label className="small fw-bold">Sort By</Form.Label>
+                  <Form.Select
+                    size="sm"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    <option value="created_at">Date Created</option>
+                    <option value="updated_at">Last Updated</option>
+                    <option value="priority">Priority</option>
+                    <option value="status">Status</option>
+                    <option value="reply_count">Reply Count</option>
+                  </Form.Select>
+                </div>
+
+                <div className="mb-3">
+                  <Form.Label className="small fw-bold">Order</Form.Label>
+                  <Form.Select
+                    size="sm"
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                  >
+                    <option value="desc">Descending</option>
+                    <option value="asc">Ascending</option>
+                  </Form.Select>
+                </div>
+
+                {/* Clear Filters */}
+                <div className="d-grid">
+                  <Button variant="outline-secondary" size="sm" onClick={clearFilters}>
+                    Clear All Filters
+                  </Button>
+                </div>
+
+                {/* Stats */}
+                <div className="mt-4 pt-3 border-top">
+                  <h6 className="small fw-bold mb-2">Results</h6>
+                  <div className="small text-muted">
+                    <div className="d-flex justify-content-between">
+                      <span>Total:</span>
+                      <span>{totalCount}</span>
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <span>Showing:</span>
+                      <span>{tickets.length}</span>
+                    </div>
+                  </div>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+
+          {/* Tickets List */}
+          <Col lg={9}>
+            {isLoading && page === 1 ? (
+              <div className="text-center py-5">
+                <Spinner animation="border" role="status" className="mb-3">
+                  <span className="visually-hidden">Loading...</span>
+                </Spinner>
+                <p>Loading tickets...</p>
+              </div>
+            ) : tickets.length > 0 ? (
+              <>
+                {/* Tickets Grid */}
+                <Row>
+                  {tickets.map((ticket) => (
+                    <Col xs={12} key={ticket.id} className="mb-3">
+                      <Card style={customStyles.ticketCard} className="h-100">
+                        <Card.Body className="p-4">
+                          <Row>
+                            <Col xs={9}>
+                              <div className="d-flex align-items-center mb-2">
+                                {ticket.is_urgent && (
+                                  <Badge bg="danger" className="me-2 small" style={customStyles.urgentBadge}>
+                                    🚨 URGENT
+                                  </Badge>
+                                )}
+                                <h5 className="fw-bold text-dark mb-0">
+                                  <Link
+                                    to={`/ticket/${ticket.id}`}
+                                    className="text-decoration-none text-dark"
+                                  >
+                                    #{ticket.id} {ticket.title}
+                                  </Link>
+                                </h5>
+                              </div>
+                              
+                              <p className="text-muted mb-3">
+                                {ticket.description.length > 150 
+                                  ? ticket.description.substring(0, 150) + '...' 
+                                  : ticket.description}
+                              </p>
+
+                              {/* Tags */}
+                              <div className="mb-3">
+                                <Badge bg="secondary" className="me-2 mb-1">
+                                  {ticket.category?.name || 'General'}
+                                </Badge>
+                                <Badge
+                                  bg={getPriorityColor(ticket.priority)}
+                                  className="me-2 mb-1"
+                                >
+                                  {ticket.priority.toUpperCase()} Priority
+                                </Badge>
+                                {ticket.tags?.map((tag: any, index: number) => (
+                                  <Badge
+                                    key={index}
+                                    bg="light"
+                                    text="dark"
+                                    className="me-2 mb-1"
+                                    style={{ borderRadius: "15px" }}
+                                  >
+                                    {tag.name}
+                                  </Badge>
+                                ))}
+                              </div>
+
+                              <small className="text-muted">
+                                Created by {ticket.author.name} • {formatDate(ticket.created_at)}
+                                {ticket.assigned_to && (
+                                  <> • Assigned to {ticket.assigned_to.name}</>
+                                )}
+                              </small>
+                            </Col>
+
+                            {/* Status & Comments */}
+                            <Col xs={3} className="d-flex flex-column align-items-end justify-content-between">
+                              <Badge
+                                bg={getStatusColor(ticket.status)}
+                                style={{ borderRadius: "20px", padding: "8px 16px", fontWeight: "500" }}
+                              >
+                                {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1).replace('_', ' ')}
+                              </Badge>
+
+                              <div className="d-flex align-items-center">
+                                <div
+                                  style={{
+                                    background: "#28a745",
+                                    color: "white",
+                                    borderRadius: "50%",
+                                    width: "30px",
+                                    height: "30px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: "0.9rem",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  {ticket.reply_count || 0}
+                                </div>
+                                <span className="ms-2 small text-muted">replies</span>
+                              </div>
+                            </Col>
+                          </Row>
+                        </Card.Body>
+                      </Card>
                     </Col>
+                  ))}
+                </Row>
 
-                    {/* Status & Comments */}
-                    <Col
-                      xs={3}
-                      className="d-flex flex-column align-items-end justify-content-between"
+                {/* Load More */}
+                {hasMore && (
+                  <div className="text-center mt-4">
+                    <Button
+                      variant="outline-primary"
+                      onClick={() => setPage(prev => prev + 1)}
+                      disabled={isLoading}
                     >
-                      <Badge
-                        bg={getStatusColor(ticket.status)}
-                        style={{ borderRadius: "20px", padding: "8px 16px", fontWeight: "500" }}
-                      >
-                        {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
-                      </Badge>
-
-                      <div className="d-flex align-items-center">
-                        <div
-                          style={{
-                            background: "#28a745",
-                            color: "white",
-                            borderRadius: "50%",
-                            width: "30px",
-                            height: "30px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "0.9rem",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          {ticket.reply_count}
-                        </div>
-                        <span className="ms-2 small text-muted">replies</span>
-                      </div>
-                    </Col>
-                  </Row>
+                      {isLoading ? "Loading..." : "Load More Tickets"}
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <Card className="text-center py-5">
+                <Card.Body>
+                  <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🎫</div>
+                  <h4>No Tickets Found</h4>
+                  <p className="text-muted">
+                    {statusFilter !== "all" || priorityFilter !== "all" || categoryFilter !== "all" || searchTerm
+                      ? "No tickets match your current filters."
+                      : "No tickets have been created yet."}
+                  </p>
+                  {(statusFilter !== "all" || priorityFilter !== "all" || categoryFilter !== "all" || searchTerm) && (
+                    <Button variant="outline-primary" onClick={clearFilters} className="me-2">
+                      Clear Filters
+                    </Button>
+                  )}
+                  {isLoggedIn && (
+                    <Link to="/create-ticket" className="btn btn-primary">
+                      Create Your First Ticket
+                    </Link>
+                  )}
                 </Card.Body>
               </Card>
-            </Col>
-          ))}
+            )}
+          </Col>
         </Row>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <Row className="mt-4">
-            <Col className="d-flex justify-content-center">
-              <Pagination>
-                <Pagination.Prev
-                  disabled={currentPage === 1}
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                />
-                {[...Array(totalPages)].map((_, index) => (
-                  <Pagination.Item
-                    key={index + 1}
-                    active={index + 1 === currentPage}
-                    onClick={() => setCurrentPage(index + 1)}
-                  >
-                    {index + 1}
-                  </Pagination.Item>
-                ))}
-                <Pagination.Next
-                  disabled={currentPage === totalPages}
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                />
-              </Pagination>
-            </Col>
-          </Row>
-        )}
-
-        {/* No Results */}
-        {currentTickets.length === 0 && !isLoading && (
-          <Row>
-            <Col className="text-center py-5">
-              <h5 className="text-muted">No tickets found</h5>
-              <p className="text-muted">
-                Try adjusting your filters or search terms
-              </p>
-              {isLoggedIn && (
-                <Link to="/create-ticket" className="btn btn-primary mt-2">
-                  Create Your First Ticket
-                </Link>
-              )}
-            </Col>
-          </Row>
-        )}
       </Container>
     </>
   );

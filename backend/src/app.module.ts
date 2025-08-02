@@ -9,6 +9,12 @@ import { CategoriesModule } from './categories/categories.module';
 import { TagsModule } from './tags/tags.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { TicketRepliesModule } from './ticket-replies/ticket-replies.module';
+import { AttachmentsModule } from './attachments/attachments.module';
+import { RoleUpgradeRequestsModule } from './role-upgrade-requests/role-upgrade-requests.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { UserSessionsModule } from './user-sessions/user-sessions.module';
+import { AdminModule } from './admin/admin.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -24,6 +30,12 @@ import { TicketRepliesModule } from './ticket-replies/ticket-replies.module';
     TagsModule,
     TicketsModule,
     TicketRepliesModule,
+    AttachmentsModule,
+    RoleUpgradeRequestsModule,
+    NotificationsModule,
+    UserSessionsModule,
+    AdminModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

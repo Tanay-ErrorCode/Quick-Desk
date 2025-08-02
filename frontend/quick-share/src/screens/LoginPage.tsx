@@ -54,7 +54,7 @@ function LoginPage() {
 
     try {
       const response = await apiService.login({ email, password });
-      
+
       if (response.success && response.user && response.token) {
         // Store authentication data
         localStorage.setItem("isLoggedIn", "true");
@@ -73,7 +73,7 @@ function LoginPage() {
         }
 
         // Dispatch custom event for navigation component
-        window.dispatchEvent(new Event('authStateChanged'));
+        window.dispatchEvent(new Event("authStateChanged"));
 
         setAlertMessage("Login successful! Redirecting...");
         setAlertType("success");
@@ -96,7 +96,11 @@ function LoginPage() {
         setTimeout(() => setShowAlert(false), 3000);
       }
     } catch (error) {
-      setAlertMessage(error instanceof Error ? error.message : "Network error. Please check your connection.");
+      setAlertMessage(
+        error instanceof Error
+          ? error.message
+          : "Network error. Please check your connection.",
+      );
       setAlertType("danger");
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
@@ -154,7 +158,10 @@ function LoginPage() {
 
                   <div className="d-flex justify-content-between align-items-center mb-4">
                     <div></div>
-                    <Link to="/forgot-password" className="text-decoration-none small">
+                    <Link
+                      to="/forgot-password"
+                      className="text-decoration-none small"
+                    >
                       Forgot Password?
                     </Link>
                   </div>

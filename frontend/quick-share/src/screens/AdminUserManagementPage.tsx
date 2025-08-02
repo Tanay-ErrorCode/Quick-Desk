@@ -185,7 +185,7 @@ function AdminUserManagementPage() {
       filtered = filtered.filter(
         (user) =>
           user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email.toLowerCase().includes(searchTerm.toLowerCase())
+          user.email.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
@@ -211,9 +211,7 @@ function AdminUserManagementPage() {
     if (!selectedUser) return;
 
     setUsers((prev) =>
-      prev.map((user) =>
-        user.id === selectedUser.id ? selectedUser : user
-      )
+      prev.map((user) => (user.id === selectedUser.id ? selectedUser : user)),
     );
 
     setShowEditModal(false);
@@ -234,12 +232,12 @@ function AdminUserManagementPage() {
     }
 
     const user: User = {
-      id: Math.max(...users.map(u => u.id)) + 1,
+      id: Math.max(...users.map((u) => u.id)) + 1,
       name: newUser.name,
       email: newUser.email,
       role: newUser.role,
       status: "Active",
-      joinDate: new Date().toISOString().split('T')[0],
+      joinDate: new Date().toISOString().split("T")[0],
       lastActive: "Never",
       ticketsCreated: 0,
       ticketsResolved: 0,
@@ -262,8 +260,8 @@ function AdminUserManagementPage() {
               ...user,
               status: user.status === "Active" ? "Inactive" : "Active",
             }
-          : user
-      )
+          : user,
+      ),
     );
 
     setAlertMessage("User status updated successfully!");
@@ -361,7 +359,9 @@ function AdminUserManagementPage() {
               <Card.Body className="p-3">
                 <Row className="g-3 align-items-end">
                   <Col lg={4} md={6}>
-                    <Form.Label className="small fw-bold">Search Users</Form.Label>
+                    <Form.Label className="small fw-bold">
+                      Search Users
+                    </Form.Label>
                     <InputGroup>
                       <Form.Control
                         type="text"
@@ -466,7 +466,10 @@ function AdminUserManagementPage() {
                             <small>
                               Created: {user.ticketsCreated}
                               {user.role === "Support Agent" && (
-                                <><br />Resolved: {user.ticketsResolved}</>
+                                <>
+                                  <br />
+                                  Resolved: {user.ticketsResolved}
+                                </>
                               )}
                             </small>
                           </td>
@@ -480,7 +483,9 @@ function AdminUserManagementPage() {
                                 ⋮
                               </Dropdown.Toggle>
                               <Dropdown.Menu>
-                                <Dropdown.Item onClick={() => handleEditUser(user)}>
+                                <Dropdown.Item
+                                  onClick={() => handleEditUser(user)}
+                                >
                                   ✏️ Edit User
                                 </Dropdown.Item>
                                 <Dropdown.Item
@@ -491,7 +496,9 @@ function AdminUserManagementPage() {
                                       : "text-success"
                                   }
                                 >
-                                  {user.status === "Active" ? "🚫 Deactivate" : "✅ Activate"}
+                                  {user.status === "Active"
+                                    ? "🚫 Deactivate"
+                                    : "✅ Activate"}
                                 </Dropdown.Item>
                                 <Dropdown.Divider />
                                 <Dropdown.Item className="text-primary">

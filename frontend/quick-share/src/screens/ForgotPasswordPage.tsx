@@ -52,20 +52,28 @@ function ForgotPasswordPage() {
 
     try {
       const response = await apiService.forgotPassword(email);
-      
+
       if (response.success) {
-        setAlertMessage("Password reset instructions have been sent to your email.");
+        setAlertMessage(
+          "Password reset instructions have been sent to your email.",
+        );
         setAlertType("success");
         setShowAlert(true);
         setEmail("");
       } else {
-        setAlertMessage(response.message || "Failed to send reset email. Please try again.");
+        setAlertMessage(
+          response.message || "Failed to send reset email. Please try again.",
+        );
         setAlertType("danger");
         setShowAlert(true);
         setTimeout(() => setShowAlert(false), 3000);
       }
     } catch (error) {
-      setAlertMessage(error instanceof Error ? error.message : "Network error. Please check your connection.");
+      setAlertMessage(
+        error instanceof Error
+          ? error.message
+          : "Network error. Please check your connection.",
+      );
       setAlertType("danger");
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
@@ -82,9 +90,12 @@ function ForgotPasswordPage() {
             <Card style={customStyles.forgotPasswordCard}>
               <Card.Body className="p-5">
                 <div className="text-center mb-4">
-                  <h1 className="h3 fw-bold text-dark mb-2">Forgot Password?</h1>
+                  <h1 className="h3 fw-bold text-dark mb-2">
+                    Forgot Password?
+                  </h1>
                   <p className="text-muted">
-                    Enter your email address and we'll send you instructions to reset your password.
+                    Enter your email address and we'll send you instructions to
+                    reset your password.
                   </p>
                 </div>
 

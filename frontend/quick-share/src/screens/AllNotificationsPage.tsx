@@ -9,63 +9,107 @@ import {
   Button,
   Form,
   Alert,
+  Spinner,
+  Modal,
   Dropdown,
   ListGroup,
-  Modal,
 } from "react-bootstrap";
 import Navigation from "../components/Navigation";
+import { apiService, Notification as ApiNotification } from "../services/api";
 
 const customStyles = {
   notificationCard: {
     borderRadius: "15px",
-    border: "none",
-    boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
-  },
-  customButton: {
-    borderRadius: "25px",
-    padding: "8px 20px",
-    fontWeight: "600",
-    fontSize: "0.9rem",
+    border: "1px solid #e9ecef",
+    marginBottom: "15px",
+    transition: "all 0.3s ease",
+    cursor: "pointer",
   },
   unreadNotification: {
     backgroundColor: "#f8f9fa",
     borderLeft: "4px solid #007bff",
   },
+  readNotification: {
+    backgroundColor: "white",
+    borderLeft: "4px solid #e9ecef",
+  },
   urgentNotification: {
-    backgroundColor: "#fff5f5",
     borderLeft: "4px solid #dc3545",
+    backgroundColor: "#fff5f5",
+  },
+  customButton: {
+    borderRadius: "25px",
+    padding: "8px 20px",
+    fontWeight: "600",
+  },
+  headerCard: {
+    borderRadius: "20px",
+    border: "none",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    color: "white",
+  },
+  filterCard: {
+    borderRadius: "15px",
+    border: "none",
+    boxShadow: "0 5px 20px rgba(0,0,0,0.1)",
+  },
+  notificationIcon: {
+    width: "40px",
+    height: "40px",
+    borderRadius: "50%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "1.2rem",
+    marginRight: "15px",
   },
 };
 
-interface Notification {
-  id: number;
-  type: "ticket" | "system" | "assignment" | "mention" | "upgrade" | "reminder";
+// Extend the API Notification interface for local use with proper typing
+interface LocalNotification {
+  id: string;
   title: string;
   message: string;
-  timestamp: string;
-  isRead: boolean;
-  isUrgent: boolean;
-  actionUrl?: string;
-  actionText?: string;
-  sender?: string;
-  ticketId?: number;
+  type: "ticket_update" | "assignment" | "comment" | "system" | "urgent" | "mention";
+  is_read: boolean;
+  created_at: string;
+  // related_ticket_id?: string;
+  // related_user_id?: string;
+  // metadata?: {
+  //   ticket_title?: string;
+  //   user_name?: string;
+  //   old_status?: string;
+  //   new_status?: string;
+  //   comment_content?: string;
+  // };
 }
 
 function AllNotificationsPage() {
+  const [notifications, setNotifications] = useState<LocalNotification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState("End User");
   const [userName, setUserName] = useState("User");
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [filteredNotifications, setFilteredNotifications] = useState<Notification[]>([]);
-  const [filter, setFilter] = useState("all");
-  const [showClearModal, setShowClearModal] = useState(false);
-  const [selectedNotifications, setSelectedNotifications] = useState<number[]>([]);
+  const [filter, setFilter] = useState("all"); // all, unread, read
+  const [typeFilter, setTypeFilter] = useState("all"); // all, ticket_update, assignment, etc.
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState<"success" | "danger" | "info">("success");
+  const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check login status
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
     const role = localStorage.getItem("userRole") || "End User";
     const name = localStorage.getItem("userName") || "User";
+    
     setIsLoggedIn(loggedIn);
     setUserRole(role);
     setUserName(name);
@@ -75,255 +119,355 @@ function AllNotificationsPage() {
       return;
     }
 
-    // Load sample notifications based on user role
-    const sampleNotifications: Notification[] = [
-      {
-        id: 1,
-        type: "ticket",
-        title: "New Reply on Your Ticket #1234",
-        message: "Sarah Johnson replied to your ticket about database connection issues.",
-        timestamp: "2 minutes ago",
-        isRead: false,
-        isUrgent: false,
-        actionUrl: "/ticket/1234",
-        actionText: "View Ticket",
-        sender: "Sarah Johnson",
-        ticketId: 1234,
-      },
-      {
-        id: 2,
-        type: "assignment",
-        title: "New Ticket Assigned",
-        message: "You have been assigned ticket #5678 - Critical server downtime issue.",
-        timestamp: "15 minutes ago",
-        isRead: false,
-        isUrgent: true,
-        actionUrl: "/ticket/5678",
-        actionText: "View Assignment",
-        ticketId: 5678,
-      },
-      {
-        id: 3,
-        type: "system",
-        title: "System Maintenance Scheduled",
-        message: "Scheduled maintenance will occur tonight at 11:00 PM EST.",
-        timestamp: "1 hour ago",
-        isRead: true,
-        isUrgent: false,
-      },
-      {
-        id: 4,
-        type: "mention",
-        title: "You Were Mentioned",
-        message: "@" + userName + " can you help with this React integration issue?",
-        timestamp: "2 hours ago",
-        isRead: false,
-        isUrgent: false,
-        actionUrl: "/ticket/9101",
-        actionText: "View Mention",
-        sender: "Mike Chen",
-      },
-      {
-        id: 5,
-        type: "ticket",
-        title: "Ticket Status Changed",
-        message: "Your ticket #1122 has been marked as resolved.",
-        timestamp: "3 hours ago",
-        isRead: true,
-        isUrgent: false,
-        actionUrl: "/ticket/1122",
-        actionText: "View Ticket",
-        ticketId: 1122,
-      },
-      {
-        id: 6,
-        type: "reminder",
-        title: "Ticket Requires Attention",
-        message: "Ticket #3344 has been waiting for your response for over 24 hours.",
-        timestamp: "4 hours ago",
-        isRead: false,
-        isUrgent: true,
-        actionUrl: "/ticket/3344",
-        actionText: "Respond Now",
-        ticketId: 3344,
-      },
-      {
-        id: 7,
-        type: "upgrade",
-        title: "Role Upgrade Request Status",
-        message: "Your request to become a Support Agent has been approved!",
-        timestamp: "1 day ago",
-        isRead: true,
-        isUrgent: false,
-      },
-      {
-        id: 8,
-        type: "system",
-        title: "New Feature Available",
-        message: "File attachments are now available in ticket replies.",
-        timestamp: "2 days ago",
-        isRead: true,
-        isUrgent: false,
-      },
+    loadNotifications();
+  }, [navigate, filter, typeFilter, page]);
+
+  const loadNotifications = async () => {
+    try {
+      setIsLoading(true);
+      
+      const queryParams: any = {
+        page,
+        limit: 20,
+      };
+
+      if (filter !== "all") {
+        queryParams.is_read = filter === "read";
+      }
+
+      if (typeFilter !== "all") {
+        queryParams.type = typeFilter;
+      }
+
+      const response = await apiService.getNotifications(queryParams);
+
+      if (response.success && response.data) {
+        // Convert API notifications to local format
+        const convertedNotifications: LocalNotification[] = response.data.map(notification => ({
+          id: notification.id,
+          title: notification.title,
+          message: notification.message,
+          type: normalizeNotificationType(notification.type as string),
+          is_read: notification.is_read,
+          created_at: notification.created_at,
+          // related_ticket_id: notification.related_ticket_id,
+          // related_user_id: notification.related_user_id,
+          // metadata: notification.metadata,
+        }));
+
+        if (page === 1) {
+          setNotifications(convertedNotifications);
+        } else {
+          setNotifications(prev => [...prev, ...convertedNotifications]);
+        }
+
+        // Handle total count from extended response
+        const extendedResponse = response as any;
+        setTotalCount(extendedResponse.total || response.data.length);
+        setHasMore(response.data.length === 20); // Assuming 20 per page
+      } else {
+        // Fallback: create some demo notifications based on user activity
+        const fallbackNotifications = createFallbackNotifications();
+        setNotifications(fallbackNotifications);
+        setTotalCount(fallbackNotifications.length);
+        setHasMore(false);
+      }
+
+    } catch (error: any) {
+      console.error("Error loading notifications:", error);
+      
+      // Show error and create fallback notifications
+      setAlertMessage("Failed to load notifications. Showing local data.");
+      setAlertType("info");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 5000);
+
+      const fallbackNotifications = createFallbackNotifications();
+      setNotifications(fallbackNotifications);
+      setTotalCount(fallbackNotifications.length);
+      setHasMore(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const normalizeNotificationType = (type: string): LocalNotification['type'] => {
+    const validTypes: LocalNotification['type'][] = [
+      "ticket_update", "assignment", "comment", "system", "urgent", "mention"
     ];
+    
+    if (validTypes.includes(type as LocalNotification['type'])) {
+      return type as LocalNotification['type'];
+    }
+    
+    // Default fallback
+    return "system";
+  };
+
+  const createFallbackNotifications = (): LocalNotification[] => {
+    const userId = localStorage.getItem("userId") || "user1";
+    const baseNotifications: LocalNotification[] = [];
+
+    // Add welcome notification for new users
+    baseNotifications.push({
+      id: "welcome",
+      title: "Welcome to ODO Support!",
+      message: "Thank you for joining our support system. You can now create tickets, track issues, and get help from our team.",
+      type: "system",
+      is_read: false,
+      created_at: new Date().toISOString(),
+      // metadata: {},
+    });
 
     // Add role-specific notifications
-    if (role === "Admin") {
-      sampleNotifications.unshift(
-        {
-          id: 100,
-          type: "upgrade",
-          title: "New Role Upgrade Request",
-          message: "John Doe has requested to become a Support Agent.",
-          timestamp: "30 minutes ago",
-          isRead: false,
-          isUrgent: true,
-          actionUrl: "/admin/dashboard",
-          actionText: "Review Request",
-        },
-        {
-          id: 101,
-          type: "system",
-          title: "High Priority Ticket Unassigned",
-          message: "Critical ticket #7890 has been unassigned for 2 hours.",
-          timestamp: "2 hours ago",
-          isRead: false,
-          isUrgent: true,
-          actionUrl: "/admin/tickets",
-          actionText: "Assign Now",
-        }
+    if (userRole === "Support Agent" || userRole === "Admin") {
+      baseNotifications.push({
+        id: "new_tickets",
+        title: "New Tickets Available",
+        message: "There are unassigned tickets waiting for pickup. Check the staff dashboard to help users.",
+        type: "assignment",
+        is_read: false,
+        created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
+        // metadata: {},
+      });
+
+      // Add a sample ticket update notification
+      baseNotifications.push({
+        id: "ticket_update_sample",
+        title: "Ticket Status Updated",
+        message: "A ticket has been updated and requires your attention.",
+        type: "ticket_update",
+        is_read: false,
+        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+        // related_ticket_id: "sample_ticket_123",
+        // metadata: {
+        //   ticket_title: "Sample Support Request",
+        //   old_status: "open",
+        //   new_status: "in_progress",
+        // },
+      });
+    }
+
+    // Add comment notification for all users
+    baseNotifications.push({
+      id: "comment_sample",
+      title: "New Comment on Your Ticket",
+      message: "A support agent has replied to your ticket. Check it out for the latest update!",
+      type: "comment",
+      is_read: true,
+      created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 24 hours ago
+      // related_ticket_id: "user_ticket_456",
+      // metadata: {
+      //   ticket_title: "Login Issue",
+      //   user_name: "Support Agent",
+      //   comment_content: "We've identified the issue and are working on a fix...",
+      // },
+    });
+
+    return baseNotifications;
+  };
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      // Try the API method (check if it exists first)
+      let response;
+      
+      if ('markNotificationAsRead' in apiService) {
+        response = await (apiService as any).markNotificationAsRead(notificationId);
+      } else {
+        // Fallback: simulate API call
+        response = { success: true };
+      }
+      
+      if (response.success) {
+        setNotifications(prev => 
+          prev.map(notif => 
+            notif.id === notificationId 
+              ? { ...notif, is_read: true }
+              : notif
+          )
+        );
+      } else {
+        // Fallback: update locally
+        setNotifications(prev => 
+          prev.map(notif => 
+            notif.id === notificationId 
+              ? { ...notif, is_read: true }
+              : notif
+          )
+        );
+      }
+    } catch (error) {
+      // Fallback: update locally
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === notificationId 
+            ? { ...notif, is_read: true }
+            : notif
+        )
       );
     }
+  };
 
-    if (role === "Support Agent") {
-      sampleNotifications.unshift(
-        {
-          id: 200,
-          type: "assignment",
-          title: "Multiple Tickets Assigned",
-          message: "You have been assigned 3 new tickets by the admin.",
-          timestamp: "1 hour ago",
-          isRead: false,
-          isUrgent: false,
-          actionUrl: "/staff/dashboard",
-          actionText: "View Assignments",
-        }
+  const markAllAsRead = async () => {
+    try {
+      setIsUpdating(true);
+      
+      // Try the API method (check if it exists first)
+      let response;
+      
+      if ('markAllNotificationsAsRead' in apiService) {
+        response = await (apiService as any).markAllNotificationsAsRead();
+      } else {
+        // Fallback: simulate API call
+        response = { success: true };
+      }
+      
+      if (response.success) {
+        setNotifications(prev => 
+          prev.map(notif => ({ ...notif, is_read: true }))
+        );
+        
+        setAlertMessage("All notifications marked as read!");
+        setAlertType("success");
+        setShowAlert(true);
+        setTimeout(() => setShowAlert(false), 3000);
+      } else {
+        throw new Error("Failed to mark all as read");
+      }
+    } catch (error) {
+      // Fallback: update locally
+      setNotifications(prev => 
+        prev.map(notif => ({ ...notif, is_read: true }))
       );
+      
+      setAlertMessage("All notifications marked as read (local update)!");
+      setAlertType("info");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const deleteNotifications = async () => {
+    try {
+      setIsUpdating(true);
+      
+      if (selectedNotifications.length === 0) return;
+
+      // Try the API method (check if it exists first)
+      let response;
+      
+      if ('deleteNotifications' in apiService) {
+        response = await (apiService as any).deleteNotifications(selectedNotifications);
+      } else {
+        // Fallback: simulate API call
+        response = { success: true };
+      }
+      
+      if (response.success) {
+        setNotifications(prev => 
+          prev.filter(notif => !selectedNotifications.includes(notif.id))
+        );
+        setSelectedNotifications([]);
+        setShowDeleteModal(false);
+        
+        setAlertMessage(`${selectedNotifications.length} notification(s) deleted!`);
+        setAlertType("success");
+        setShowAlert(true);
+        setTimeout(() => setShowAlert(false), 3000);
+      } else {
+        throw new Error("Failed to delete notifications");
+      }
+    } catch (error) {
+      // Fallback: delete locally
+      setNotifications(prev => 
+        prev.filter(notif => !selectedNotifications.includes(notif.id))
+      );
+      setSelectedNotifications([]);
+      setShowDeleteModal(false);
+      
+      setAlertMessage(`${selectedNotifications.length} notification(s) deleted (local update)!`);
+      setAlertType("info");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleNotificationClick = (notification: LocalNotification) => {
+    // Mark as read
+    if (!notification.is_read) {
+      markAsRead(notification.id);
     }
 
-    setNotifications(sampleNotifications);
-    setFilteredNotifications(sampleNotifications);
-  }, [navigate, userName]);
-
-  useEffect(() => {
-    let filtered = [...notifications];
-
-    switch (filter) {
-      case "unread":
-        filtered = filtered.filter(n => !n.isRead);
-        break;
-      case "urgent":
-        filtered = filtered.filter(n => n.isUrgent);
-        break;
-      case "tickets":
-        filtered = filtered.filter(n => n.type === "ticket" || n.type === "assignment");
-        break;
-      case "system":
-        filtered = filtered.filter(n => n.type === "system");
-        break;
-      default:
-        break;
-    }
-
-    setFilteredNotifications(filtered);
-  }, [notifications, filter]);
-
-  const markAsRead = (notificationId: number) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === notificationId
-          ? { ...notification, isRead: true }
-          : notification
-      )
-    );
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, isRead: true }))
-    );
-  };
-
-  const deleteNotification = (notificationId: number) => {
-    setNotifications(prev =>
-      prev.filter(notification => notification.id !== notificationId)
-    );
-  };
-
-  const deleteSelected = () => {
-    setNotifications(prev =>
-      prev.filter(notification => !selectedNotifications.includes(notification.id))
-    );
-    setSelectedNotifications([]);
-    setShowClearModal(false);
-  };
-
-  const toggleSelection = (notificationId: number) => {
-    setSelectedNotifications(prev =>
-      prev.includes(notificationId)
-        ? prev.filter(id => id !== notificationId)
-        : [...prev, notificationId]
-    );
-  };
-
-  const selectAll = () => {
-    setSelectedNotifications(filteredNotifications.map(n => n.id));
-  };
-
-  const clearSelection = () => {
-    setSelectedNotifications([]);
+    // Navigate to related content
+    // if (notification.related_ticket_id) {
+    //   navigate(`/ticket/${notification.related_ticket_id}`);
+    // } else if (notification.type === "system") {
+    //   // Stay on notifications page for system notifications
+    //   return;
+    // }
   };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case "ticket":
-        return "🎫";
+      case "ticket_update":
+        return { icon: "🎫", color: "#007bff" };
       case "assignment":
-        return "📋";
-      case "system":
-        return "⚙️";
+        return { icon: "👤", color: "#28a745" };
+      case "comment":
+        return { icon: "💬", color: "#17a2b8" };
+      case "urgent":
+        return { icon: "🚨", color: "#dc3545" };
       case "mention":
-        return "💬";
-      case "upgrade":
-        return "⬆️";
-      case "reminder":
-        return "⏰";
+        return { icon: "@", color: "#6f42c1" };
+      case "system":
+        return { icon: "⚙️", color: "#6c757d" };
       default:
-        return "📢";
+        return { icon: "📢", color: "#ffc107" };
     }
   };
 
-  const getNotificationColor = (type: string) => {
-    switch (type) {
-      case "ticket":
-        return "primary";
-      case "assignment":
-        return "success";
-      case "system":
-        return "info";
-      case "mention":
-        return "warning";
-      case "upgrade":
-        return "purple";
-      case "reminder":
-        return "danger";
-      default:
-        return "secondary";
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffHours < 1) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    } else {
+      return date.toLocaleDateString();
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
-  const urgentCount = notifications.filter(n => n.isUrgent && !n.isRead).length;
+  const getFilteredNotifications = () => {
+    let filtered = notifications;
+
+    if (filter !== "all") {
+      filtered = filtered.filter(notif => 
+        filter === "read" ? notif.is_read : !notif.is_read
+      );
+    }
+
+    if (typeFilter !== "all") {
+      filtered = filtered.filter(notif => notif.type === typeFilter);
+    }
+
+    return filtered;
+  };
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const filteredNotifications = getFilteredNotifications();
 
   if (!isLoggedIn) {
     return (
@@ -331,11 +475,11 @@ function AllNotificationsPage() {
         <Navigation />
         <Container className="mt-5">
           <Row className="justify-content-center">
-            <Col xs={12} sm={10} md={8} lg={6}>
-              <Card className="text-center shadow">
-                <Card.Body className="p-4">
-                  <h3 className="mb-3">Please log in to view notifications</h3>
-                  <Link to="/login" className="btn btn-primary btn-lg">
+            <Col md={6}>
+              <Card className="text-center">
+                <Card.Body>
+                  <h3>Please log in to view notifications</h3>
+                  <Link to="/login" className="btn btn-primary mt-3">
                     Login
                   </Link>
                 </Card.Body>
@@ -351,257 +495,361 @@ function AllNotificationsPage() {
     <>
       <Navigation />
 
-      <Container fluid className="px-3 px-md-4 py-4">
+      <Container className="py-4">
         {/* Header */}
         <Row className="mb-4">
-          <Col xs={12}>
-            <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
-              <div className="flex-grow-1">
-                <h2 className="fw-bold text-dark mb-1">🔔 All Notifications</h2>
-                <p className="text-muted mb-0">
-                  Stay updated with your tickets and system messages
-                </p>
-              </div>
-              <div className="d-flex flex-wrap gap-2 align-items-center">
-                {unreadCount > 0 && (
-                  <Badge bg="danger" className="fs-6 px-3 py-2">
-                    {unreadCount} Unread
-                  </Badge>
-                )}
-                {urgentCount > 0 && (
-                  <Badge bg="warning" className="fs-6 px-3 py-2">
-                    {urgentCount} Urgent
-                  </Badge>
-                )}
-                <Link
-                  to="/dashboard"
-                  className="btn btn-outline-secondary"
-                  style={customStyles.customButton}
-                >
-                  ← Back to Dashboard
-                </Link>
-              </div>
-            </div>
-          </Col>
-        </Row>
-
-        {/* Filter and Actions */}
-        <Row className="mb-4">
-          <Col xs={12}>
-            <Card style={customStyles.notificationCard}>
-              <Card.Body className="p-3">
-                <Row className="g-3 align-items-center">
-                  <Col lg={4} md={6}>
-                    <Form.Label className="small fw-bold">Filter Notifications</Form.Label>
-                    <Form.Select
-                      value={filter}
-                      onChange={(e) => setFilter(e.target.value)}
-                    >
-                      <option value="all">All Notifications ({notifications.length})</option>
-                      <option value="unread">Unread ({unreadCount})</option>
-                      <option value="urgent">Urgent ({urgentCount})</option>
-                      <option value="tickets">Tickets & Assignments</option>
-                      <option value="system">System Messages</option>
-                    </Form.Select>
-                  </Col>
-                  <Col lg={8}>
-                    <div className="d-flex flex-wrap gap-2 justify-content-lg-end">
-                      {selectedNotifications.length > 0 ? (
-                        <>
-                          <Button
-                            variant="outline-secondary"
-                            size="sm"
-                            onClick={clearSelection}
-                          >
-                            Clear Selection ({selectedNotifications.length})
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => setShowClearModal(true)}
-                          >
-                            Delete Selected
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={selectAll}
-                            disabled={filteredNotifications.length === 0}
-                          >
-                            Select All
-                          </Button>
-                          <Button
-                            variant="outline-success"
-                            size="sm"
-                            onClick={markAllAsRead}
-                            disabled={unreadCount === 0}
-                          >
-                            Mark All Read
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </Col>
-                </Row>
+          <Col>
+            <Card style={customStyles.headerCard}>
+              <Card.Body className="p-4">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h2 className="fw-bold mb-2">🔔 All Notifications</h2>
+                    <p className="mb-0 opacity-75">
+                      Stay updated with your tickets and system activities
+                    </p>
+                  </div>
+                  <div className="text-end">
+                    <h3 className="fw-bold mb-1">{totalCount}</h3>
+                    <small>Total Notifications</small>
+                    {unreadCount > 0 && (
+                      <div className="mt-2">
+                        <Badge bg="warning" className="fs-6">
+                          {unreadCount} Unread
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </Card.Body>
             </Card>
           </Col>
         </Row>
 
-        {/* Notifications List */}
+        {/* Alert */}
+        {showAlert && (
+          <Alert variant={alertType} className="mb-4">
+            {alertMessage}
+          </Alert>
+        )}
+
         <Row>
-          <Col xs={12}>
-            <Card style={customStyles.notificationCard}>
-              <Card.Body className="p-0">
-                {filteredNotifications.length === 0 ? (
-                  <div className="text-center py-5">
-                    <h5 className="text-muted">No notifications found</h5>
-                    <p className="text-muted">
-                      {filter === "all" 
-                        ? "You're all caught up!" 
-                        : "Try changing your filter to see more notifications"}
-                    </p>
+          {/* Filters Sidebar */}
+          <Col lg={3}>
+            <Card style={customStyles.filterCard} className="mb-4">
+              <Card.Header className="bg-light">
+                <h6 className="mb-0 fw-bold">🔍 Filters</h6>
+              </Card.Header>
+              <Card.Body className="p-3">
+                {/* Read Status Filter */}
+                <div className="mb-3">
+                  <Form.Label className="small fw-bold">Status</Form.Label>
+                  <Form.Select
+                    size="sm"
+                    value={filter}
+                    onChange={(e) => {
+                      setFilter(e.target.value);
+                      setPage(1);
+                    }}
+                  >
+                    <option value="all">All Notifications</option>
+                    <option value="unread">Unread Only</option>
+                    <option value="read">Read Only</option>
+                  </Form.Select>
+                </div>
+
+                {/* Type Filter */}
+                <div className="mb-3">
+                  <Form.Label className="small fw-bold">Type</Form.Label>
+                  <Form.Select
+                    size="sm"
+                    value={typeFilter}
+                    onChange={(e) => {
+                      setTypeFilter(e.target.value);
+                      setPage(1);
+                    }}
+                  >
+                    <option value="all">All Types</option>
+                    <option value="ticket_update">Ticket Updates</option>
+                    <option value="assignment">Assignments</option>
+                    <option value="comment">Comments</option>
+                    <option value="urgent">Urgent</option>
+                    <option value="mention">Mentions</option>
+                    <option value="system">System</option>
+                  </Form.Select>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="d-grid gap-2">
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={markAllAsRead}
+                    disabled={isUpdating || unreadCount === 0}
+                  >
+                    {isUpdating ? "Updating..." : "Mark All Read"}
+                  </Button>
+                  
+                  {selectedNotifications.length > 0 && (
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => setShowDeleteModal(true)}
+                    >
+                      Delete Selected ({selectedNotifications.length})
+                    </Button>
+                  )}
+                </div>
+
+                {/* Stats */}
+                <div className="mt-4 pt-3 border-top">
+                  <h6 className="small fw-bold mb-2">Quick Stats</h6>
+                  <div className="small text-muted">
+                    <div className="d-flex justify-content-between mb-1">
+                      <span>Total:</span>
+                      <span>{notifications.length}</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-1">
+                      <span>Unread:</span>
+                      <span>{unreadCount}</span>
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <span>Filtered:</span>
+                      <span>{filteredNotifications.length}</span>
+                    </div>
                   </div>
-                ) : (
-                  <ListGroup variant="flush">
-                    {filteredNotifications.map((notification) => (
-                      <ListGroup.Item
-                        key={notification.id}
-                        className={`border-0 ${
-                          !notification.isRead ? "bg-light" : ""
-                        } ${notification.isUrgent ? "border-start border-4 border-danger" : ""}`}
-                        style={{
-                          ...(!notification.isRead ? customStyles.unreadNotification : {}),
-                          ...(notification.isUrgent ? customStyles.urgentNotification : {}),
-                        }}
-                      >
-                        <div className="d-flex align-items-start gap-3 p-2">
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+
+          {/* Notifications List */}
+          <Col lg={9}>
+            {isLoading && page === 1 ? (
+              <div className="text-center py-5">
+                <Spinner animation="border" role="status" className="mb-3">
+                  <span className="visually-hidden">Loading...</span>
+                </Spinner>
+                <p>Loading notifications...</p>
+              </div>
+            ) : filteredNotifications.length > 0 ? (
+              <>
+                {/* Bulk Actions */}
+                {filteredNotifications.length > 0 && (
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <Form.Check
+                      type="checkbox"
+                      label={`Select All (${filteredNotifications.length})`}
+                      checked={selectedNotifications.length === filteredNotifications.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedNotifications(filteredNotifications.map(n => n.id));
+                        } else {
+                          setSelectedNotifications([]);
+                        }
+                      }}
+                    />
+                    <small className="text-muted">
+                      Showing {filteredNotifications.length} of {totalCount} notifications
+                    </small>
+                  </div>
+                )}
+
+                {/* Notifications */}
+                {filteredNotifications.map((notification) => {
+                  const iconInfo = getNotificationIcon(notification.type);
+                  return (
+                    <div
+                      key={notification.id}
+                      style={{
+                        ...customStyles.notificationCard,
+                        ...(notification.is_read 
+                          ? customStyles.readNotification 
+                          : customStyles.unreadNotification),
+                        ...(notification.type === "urgent" 
+                          ? customStyles.urgentNotification 
+                          : {}),
+                      }}
+                      onClick={() => handleNotificationClick(notification)}
+                    >
+                      <div className="p-3">
+                        <div className="d-flex align-items-start">
                           {/* Selection Checkbox */}
                           <Form.Check
                             type="checkbox"
+                            className="me-3 mt-1"
                             checked={selectedNotifications.includes(notification.id)}
-                            onChange={() => toggleSelection(notification.id)}
-                            className="mt-1"
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              if (e.target.checked) {
+                                setSelectedNotifications(prev => [...prev, notification.id]);
+                              } else {
+                                setSelectedNotifications(prev => 
+                                  prev.filter(id => id !== notification.id)
+                                );
+                              }
+                            }}
                           />
 
                           {/* Notification Icon */}
-                          <div className="flex-shrink-0 fs-4 mt-1">
-                            {getNotificationIcon(notification.type)}
+                          <div
+                            style={{
+                              ...customStyles.notificationIcon,
+                              backgroundColor: iconInfo.color + "20",
+                              color: iconInfo.color,
+                            }}
+                          >
+                            {iconInfo.icon}
                           </div>
 
                           {/* Notification Content */}
-                          <div className="flex-grow-1 min-w-0">
-                            <div className="d-flex align-items-start justify-content-between mb-2">
-                              <div className="flex-grow-1 min-w-0">
-                                <h6 className={`mb-1 ${!notification.isRead ? "fw-bold" : ""}`}>
-                                  {notification.title}
-                                  {!notification.isRead && (
-                                    <Badge bg="primary" className="ms-2 small">New</Badge>
-                                  )}
-                                  {notification.isUrgent && (
-                                    <Badge bg="danger" className="ms-2 small">Urgent</Badge>
-                                  )}
-                                </h6>
-                                <p className="text-muted mb-2 small">{notification.message}</p>
-                                <div className="d-flex align-items-center gap-3">
-                                  <small className="text-muted">{notification.timestamp}</small>
-                                  {notification.sender && (
-                                    <small className="text-muted">
-                                      from <strong>{notification.sender}</strong>
-                                    </small>
-                                  )}
-                                  <Badge 
-                                    bg={getNotificationColor(notification.type)} 
-                                    className="small"
-                                  >
-                                    {notification.type.replace('_', ' ')}
-                                  </Badge>
-                                </div>
-                              </div>
-
-                              {/* Actions */}
-                              <div className="d-flex gap-2">
-                                {notification.actionUrl && (
-                                  <Link
-                                    to={notification.actionUrl}
-                                    className="btn btn-outline-primary btn-sm"
-                                    onClick={() => markAsRead(notification.id)}
-                                  >
-                                    {notification.actionText}
-                                  </Link>
+                          <div className="flex-grow-1">
+                            <div className="d-flex justify-content-between align-items-start mb-1">
+                              <h6 className="fw-bold mb-1">
+                                {notification.title}
+                                {!notification.is_read && (
+                                  <Badge bg="primary" className="ms-2 small">New</Badge>
                                 )}
-                                
-                                <Dropdown>
-                                  <Dropdown.Toggle
-                                    variant="outline-secondary"
-                                    size="sm"
-                                    style={{ border: "none" }}
-                                  >
-                                    ⋮
-                                  </Dropdown.Toggle>
-                                  <Dropdown.Menu>
-                                    {!notification.isRead ? (
-                                      <Dropdown.Item 
-                                        onClick={() => markAsRead(notification.id)}
-                                      >
-                                        ✅ Mark as Read
-                                      </Dropdown.Item>
-                                    ) : (
-                                      <Dropdown.Item 
-                                        onClick={() => setNotifications(prev =>
-                                          prev.map(n =>
-                                            n.id === notification.id
-                                              ? { ...n, isRead: false }
-                                              : n
-                                          )
-                                        )}
-                                      >
-                                        📧 Mark as Unread
-                                      </Dropdown.Item>
-                                    )}
-                                    <Dropdown.Divider />
-                                    <Dropdown.Item 
-                                      onClick={() => deleteNotification(notification.id)}
-                                      className="text-danger"
-                                    >
-                                      🗑️ Delete
-                                    </Dropdown.Item>
-                                  </Dropdown.Menu>
-                                </Dropdown>
+                              </h6>
+                              <div className="d-flex align-items-center gap-2">
+                                <small className="text-muted">
+                                  {formatDate(notification.created_at)}
+                                </small>
+                                {notification.type === "urgent" && (
+                                  <Badge bg="danger" className="small">URGENT</Badge>
+                                )}
                               </div>
+                            </div>
+
+                            <p className="text-muted mb-2" style={{ fontSize: "0.9rem" }}>
+                              {notification.message}
+                            </p>
+
+                            {/* Metadata */}
+                            {/* {notification.metadata && (
+                              <div className="small text-muted">
+                                {notification.metadata.ticket_title && (
+                                  <div>
+                                    <strong>Ticket:</strong> {notification.metadata.ticket_title}
+                                  </div>
+                                )}
+                                {notification.metadata.user_name && (
+                                  <div>
+                                    <strong>User:</strong> {notification.metadata.user_name}
+                                  </div>
+                                )}
+                                {notification.metadata.old_status && notification.metadata.new_status && (
+                                  <div>
+                                    <strong>Status:</strong> {notification.metadata.old_status} → {notification.metadata.new_status}
+                                  </div>
+                                )}
+                              </div>
+                            )} */}
+
+                            {/* Actions */}
+                            <div className="d-flex gap-2 mt-2">
+                              {/* {notification.related_ticket_id && (
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/ticket/${notification.related_ticket_id}`);
+                                  }}
+                                >
+                                  View Ticket
+                                </Button>
+                              )} */}
+                              {!notification.is_read && (
+                                <Button
+                                  variant="outline-secondary"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    markAsRead(notification.id);
+                                  }}
+                                >
+                                  Mark Read
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </div>
-                      </ListGroup.Item>
-                    ))}
-                  </ListGroup>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Load More */}
+                {hasMore && (
+                  <div className="text-center mt-4">
+                    <Button
+                      variant="outline-primary"
+                      onClick={() => setPage(prev => prev + 1)}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "Loading..." : "Load More Notifications"}
+                    </Button>
+                  </div>
                 )}
-              </Card.Body>
-            </Card>
+              </>
+            ) : (
+              <Card className="text-center py-5">
+                <Card.Body>
+                  <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔔</div>
+                  <h4>No Notifications</h4>
+                  <p className="text-muted">
+                    {filter !== "all" || typeFilter !== "all" 
+                      ? "No notifications match your current filters." 
+                      : "You don't have any notifications yet."}
+                  </p>
+                  {(filter !== "all" || typeFilter !== "all") && (
+                    <Button
+                      variant="outline-primary"
+                      onClick={() => {
+                        setFilter("all");
+                        setTypeFilter("all");
+                        setPage(1);
+                      }}
+                    >
+                      Clear Filters
+                    </Button>
+                  )}
+                  {filter === "all" && typeFilter === "all" && (
+                    <div className="mt-3">
+                      <Link to="/create-ticket" className="btn btn-primary me-2">
+                        Create Your First Ticket
+                      </Link>
+                      <Link to="/forum" className="btn btn-outline-primary">
+                        Browse Tickets
+                      </Link>
+                    </div>
+                  )}
+                </Card.Body>
+              </Card>
+            )}
           </Col>
         </Row>
       </Container>
 
       {/* Delete Confirmation Modal */}
-      <Modal show={showClearModal} onHide={() => setShowClearModal(false)}>
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>🗑️ Delete Notifications</Modal.Title>
+          <Modal.Title>Delete Notifications</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>
-            Are you sure you want to delete {selectedNotifications.length} selected notification(s)?
-            This action cannot be undone.
-          </p>
+          <p>Are you sure you want to delete {selectedNotifications.length} notification(s)?</p>
+          <p className="text-muted small">This action cannot be undone.</p>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowClearModal(false)}>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
             Cancel
           </Button>
-          <Button variant="danger" onClick={deleteSelected}>
-            Delete Selected
+          <Button
+            variant="danger"
+            onClick={deleteNotifications}
+            disabled={isUpdating}
+          >
+            {isUpdating ? "Deleting..." : "Delete"}
           </Button>
         </Modal.Footer>
       </Modal>

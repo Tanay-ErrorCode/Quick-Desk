@@ -11,6 +11,7 @@ import {
   Badge,
 } from "react-bootstrap";
 import Navigation from "../components/Navigation";
+import { apiService, CreateTicketData, Category } from "../services/api";
 
 const customStyles = {
   formCard: {
@@ -31,21 +32,24 @@ const customStyles = {
 };
 
 interface TicketFormData {
-  question: string;
+  title: string;
   description: string;
   tags: string;
-  category: string;
-  priority: "Low" | "Medium" | "High";
+  category_id: string;
+  priority: "low" | "medium" | "high";
+  is_urgent: boolean;
 }
 
 function CreateTicketPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [formData, setFormData] = useState<TicketFormData>({
-    question: "",
+    title: "",
     description: "",
     tags: "",
-    category: "Technical",
-    priority: "Medium",
+    category_id: "",
+    priority: "medium",
+    is_urgent: false,
   });
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
@@ -60,18 +64,51 @@ function CreateTicketPage() {
 
     if (!loggedIn) {
       navigate("/login");
+      return;
     }
+
+    // Load categories
+    loadCategories();
   }, [navigate]);
+
+  const loadCategories = async () => {
+    try {
+      const response = await apiService.getCategories();
+      if (response.success && response.data) {
+        setCategories(response.data.filter(cat => cat.is_active));
+        if (response.data && response.data.length > 0) {
+          setFormData(prev => ({ ...prev, category_id: response.data?.[0]?.id ?? '' }));
+        }
+      }
+    } catch (error) {
+      console.error("Error loading categories:", error);
+      // Fallback categories if API fails
+      setCategories([
+        { id: "1", name: "Technical", description: "", color: "#007bff", icon: "🛠️", is_active: true },
+        { id: "2", name: "Development", description: "", color: "#28a745", icon: "💻", is_active: true },
+        { id: "3", name: "Database", description: "", color: "#dc3545", icon: "🗄️", is_active: true },
+        { id: "4", name: "DevOps", description: "", color: "#fd7e14", icon: "⚙️", is_active: true },
+        { id: "5", name: "UI/UX", description: "", color: "#6f42c1", icon: "🎨", is_active: true },
+        { id: "6", name: "Security", description: "", color: "#e83e8c", icon: "🔒", is_active: true },
+        { id: "7", name: "General", description: "", color: "#6c757d", icon: "📝", is_active: true },
+      ]);
+      if (categories.length === 0) {
+        setFormData(prev => ({ ...prev, category_id: "1" }));
+      }
+    }
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
@@ -80,8 +117,8 @@ function CreateTicketPage() {
     setIsSubmitting(true);
 
     // Validation
-    if (!formData.question.trim()) {
-      setAlertMessage("Please enter your question");
+    if (!formData.title.trim()) {
+      setAlertMessage("Please enter a ticket title");
       setAlertType("danger");
       setShowAlert(true);
       setIsSubmitting(false);
@@ -107,36 +144,60 @@ function CreateTicketPage() {
       return;
     }
 
-    // Simulate API call
-    setTimeout(() => {
-      setAlertMessage("Your question has been posted successfully!");
-      setAlertType("success");
+    try {
+      const ticketData: CreateTicketData = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        category_id: formData.category_id,
+        priority: formData.priority,
+        is_urgent: formData.is_urgent,
+        tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0) : [],
+      };
+
+      const response = await apiService.createTicket(ticketData);
+
+      if (response.success) {
+        setAlertMessage("Your ticket has been created successfully!");
+        setAlertType("success");
+        setShowAlert(true);
+
+        // Reset form
+        setFormData({
+          title: "",
+          description: "",
+          tags: "",
+          category_id: categories.length > 0 ? categories[0].id : "",
+          priority: "medium",
+          is_urgent: false,
+        });
+
+        // Redirect after success
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 2000);
+      } else {
+        setAlertMessage(response.message || "Failed to create ticket");
+        setAlertType("danger");
+        setShowAlert(true);
+        setTimeout(() => setShowAlert(false), 3000);
+      }
+    } catch (error: any) {
+      setAlertMessage(error.message || "Failed to create ticket. Please try again.");
+      setAlertType("danger");
       setShowAlert(true);
-      setIsSubmitting(false);
+      setTimeout(() => setShowAlert(false), 3000);
+    }
 
-      // Reset form
-      setFormData({
-        question: "",
-        description: "",
-        tags: "",
-        category: "Technical",
-        priority: "Medium",
-      });
-
-      // Redirect after success
-      setTimeout(() => {
-        navigate("/forum");
-      }, 2000);
-    }, 1000);
+    setIsSubmitting(false);
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "High":
+      case "high":
         return "danger";
-      case "Medium":
+      case "medium":
         return "warning";
-      case "Low":
+      case "low":
         return "success";
       default:
         return "secondary";
@@ -175,8 +236,12 @@ function CreateTicketPage() {
           <Col>
             <div className="d-flex justify-content-between align-items-center">
               <div>
-                <h2 className="fw-bold text-dark mb-1">Ask Your Question</h2>
+                <h2 className="fw-bold text-dark mb-1">Create Support Ticket</h2>
+                <p className="text-muted">Describe your issue and get help from our support team</p>
               </div>
+              <Link to="/dashboard" className="btn btn-outline-secondary">
+                ← Back to Dashboard
+              </Link>
             </div>
           </Col>
         </Row>
@@ -195,30 +260,29 @@ function CreateTicketPage() {
               <div style={customStyles.headerGradient} className="p-4">
                 <h4 className="mb-0 fw-bold">Create New Support Ticket</h4>
                 <small className="opacity-75">
-                  Fill out the form below to get help from our community
+                  Fill out the form below to get help from our support team
                 </small>
               </div>
 
               <Card.Body className="p-5">
                 <Form onSubmit={handleSubmit}>
-                  {/* Question Title */}
+                  {/* Ticket Title */}
                   <Form.Group className="mb-4">
                     <Form.Label className="fw-bold">
-                      Question <span className="text-danger">*</span>
+                      Ticket Title <span className="text-danger">*</span>
                     </Form.Label>
                     <Form.Control
                       type="text"
-                      name="question"
-                      value={formData.question}
+                      name="title"
+                      value={formData.title}
                       onChange={handleInputChange}
-                      placeholder="Enter your question title (e.g., How to integrate payment gateway?)"
+                      placeholder="Enter a clear, descriptive title for your issue"
                       size="lg"
                       style={{ borderRadius: "10px" }}
                       maxLength={200}
                     />
                     <Form.Text className="text-muted">
-                      Be specific and descriptive. This helps others understand
-                      your question quickly.
+                      Be specific and descriptive. This helps our team understand your issue quickly.
                     </Form.Text>
                   </Form.Group>
 
@@ -233,12 +297,11 @@ function CreateTicketPage() {
                       name="description"
                       value={formData.description}
                       onChange={handleInputChange}
-                      placeholder="Provide detailed information about your question. Include what you've tried, error messages, code snippets, etc."
+                      placeholder="Provide detailed information about your issue. Include what you've tried, error messages, steps to reproduce, etc."
                       style={{ borderRadius: "10px" }}
                     />
                     <Form.Text className="text-muted">
-                      {formData.description.length}/500 characters. Minimum 20
-                      characters required.
+                      {formData.description.length}/500 characters. Minimum 20 characters required.
                     </Form.Text>
                   </Form.Group>
 
@@ -246,21 +309,19 @@ function CreateTicketPage() {
                     {/* Category */}
                     <Col md={6}>
                       <Form.Group className="mb-4">
-                        <Form.Label className="fw-bold">Category</Form.Label>
+                        <Form.Label className="fw-bold">Category <span className="text-danger">*</span></Form.Label>
                         <Form.Select
-                          name="category"
-                          value={formData.category}
+                          name="category_id"
+                          value={formData.category_id}
                           onChange={handleInputChange}
                           size="lg"
                           style={{ borderRadius: "10px" }}
                         >
-                          <option value="Technical">Technical</option>
-                          <option value="Development">Development</option>
-                          <option value="Database">Database</option>
-                          <option value="DevOps">DevOps</option>
-                          <option value="UI/UX">UI/UX</option>
-                          <option value="Security">Security</option>
-                          <option value="General">General</option>
+                          {categories.map((category) => (
+                            <option key={category.id} value={category.id}>
+                              {category.icon} {category.name}
+                            </option>
+                          ))}
                         </Form.Select>
                       </Form.Group>
                     </Col>
@@ -276,13 +337,13 @@ function CreateTicketPage() {
                           size="lg"
                           style={{ borderRadius: "10px" }}
                         >
-                          <option value="Low">Low</option>
-                          <option value="Medium">Medium</option>
-                          <option value="High">High</option>
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
                         </Form.Select>
                         <div className="mt-2">
                           <Badge bg={getPriorityColor(formData.priority)}>
-                            {formData.priority} Priority
+                            {formData.priority.toUpperCase()} Priority
                           </Badge>
                         </div>
                       </Form.Group>
@@ -290,7 +351,7 @@ function CreateTicketPage() {
                   </Row>
 
                   {/* Tags */}
-                  <Form.Group className="mb-5">
+                  <Form.Group className="mb-4">
                     <Form.Label className="fw-bold">Tags</Form.Label>
                     <Form.Control
                       type="text"
@@ -302,8 +363,22 @@ function CreateTicketPage() {
                       style={{ borderRadius: "10px" }}
                     />
                     <Form.Text className="text-muted">
-                      Add relevant tags to help others find and answer your
-                      question. Separate multiple tags with commas.
+                      Add relevant tags to help categorize your ticket. Separate multiple tags with commas.
+                    </Form.Text>
+                  </Form.Group>
+
+                  {/* Urgent Checkbox */}
+                  <Form.Group className="mb-5">
+                    <Form.Check
+                      type="checkbox"
+                      name="is_urgent"
+                      checked={formData.is_urgent}
+                      onChange={handleInputChange}
+                      label="🚨 Mark as Urgent"
+                      className="fw-bold"
+                    />
+                    <Form.Text className="text-muted">
+                      Only mark as urgent if this issue is blocking critical business operations.
                     </Form.Text>
                   </Form.Group>
 
@@ -328,10 +403,10 @@ function CreateTicketPage() {
                             role="status"
                             aria-hidden="true"
                           ></span>
-                          Posting...
+                          Creating...
                         </>
                       ) : (
-                        "Post Question"
+                        "Create Ticket"
                       )}
                     </Button>
                   </div>
@@ -347,38 +422,32 @@ function CreateTicketPage() {
             <Card className="bg-light border-0">
               <Card.Body className="p-4">
                 <h5 className="fw-bold mb-3">
-                  💡 Tips for Getting Better Answers
+                  💡 Tips for Better Support
                 </h5>
                 <Row>
                   <Col md={6}>
                     <ul className="list-unstyled">
                       <li className="mb-2">
-                        ✅ <strong>Be specific</strong> - Include exact error
-                        messages
+                        ✅ <strong>Be specific</strong> - Include exact error messages
                       </li>
                       <li className="mb-2">
-                        ✅ <strong>Show your work</strong> - What have you
-                        already tried?
+                        ✅ <strong>Show your work</strong> - What have you already tried?
                       </li>
                       <li className="mb-2">
-                        ✅ <strong>Add context</strong> - What are you trying to
-                        achieve?
+                        ✅ <strong>Add context</strong> - What are you trying to achieve?
                       </li>
                     </ul>
                   </Col>
                   <Col md={6}>
                     <ul className="list-unstyled">
                       <li className="mb-2">
-                        ✅ <strong>Use relevant tags</strong> - Help others find
-                        your question
+                        ✅ <strong>Use relevant tags</strong> - Help us categorize your issue
                       </li>
                       <li className="mb-2">
-                        ✅ <strong>Format code</strong> - Use code blocks for
-                        better readability
+                        ✅ <strong>Choose correct priority</strong> - This helps us respond appropriately
                       </li>
                       <li className="mb-2">
-                        ✅ <strong>Check spelling</strong> - Clear questions get
-                        better answers
+                        ✅ <strong>Check spelling</strong> - Clear descriptions get faster responses
                       </li>
                     </ul>
                   </Col>

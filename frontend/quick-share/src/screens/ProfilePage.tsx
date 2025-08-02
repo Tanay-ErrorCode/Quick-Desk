@@ -36,7 +36,7 @@ const customStyles = {
     justifyContent: "center",
     margin: "0 auto",
     border: "3px solid #e9ecef",
-    fontSize: "0.9rem",
+    fontSize: "2rem",
     color: "#6c757d",
   },
   adminBadge: {
@@ -68,12 +68,14 @@ function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState("");
+  const [upgradeRole, setUpgradeRole] = useState("Support Agent");
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [alertType, setAlertType] = useState<"success" | "danger" | "info">(
     "success",
   );
   const [isLoading, setIsLoading] = useState(true);
+  const [upgradeRequests, setUpgradeRequests] = useState<any[]>([]);
 
   useEffect(() => {
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
@@ -81,6 +83,7 @@ function ProfilePage() {
 
     if (loggedIn) {
       loadUserProfile();
+      loadUpgradeRequests();
     } else {
       setIsLoading(false);
     }
@@ -148,6 +151,17 @@ function ProfilePage() {
     }
   };
 
+  const loadUpgradeRequests = async () => {
+    try {
+      const response = await apiService.getMyUpgradeRequests();
+      if (response.success && response.data) {
+        setUpgradeRequests(response.data);
+      }
+    } catch (error) {
+      console.error("Error loading upgrade requests:", error);
+    }
+  };
+
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -177,14 +191,30 @@ function ProfilePage() {
     window.dispatchEvent(new Event('authStateChanged'));
   };
 
-  const handleUpgradeRequest = () => {
-    setShowUpgradeModal(false);
-    setAlertMessage("Upgrade request sent to admin for review!");
-    setAlertType("info");
-    setShowAlert(true);
-    setTimeout(() => setShowAlert(false), 5000);
+  const handleUpgradeRequest = async () => {
+    try {
+      const response = await apiService.submitUpgradeRequest({
+        requested_role: upgradeRole,
+        reason: upgradeMessage
+      });
 
-    localStorage.setItem("upgradeRequestPending", "true");
+      if (response.success) {
+        setShowUpgradeModal(false);
+        setUpgradeMessage("");
+        setAlertMessage("Upgrade request submitted successfully! An admin will review your request.");
+        setAlertType("success");
+        setShowAlert(true);
+        setTimeout(() => setShowAlert(false), 5000);
+
+        // Reload upgrade requests
+        loadUpgradeRequests();
+      }
+    } catch (error) {
+      setAlertMessage(error instanceof Error ? error.message : "Failed to submit upgrade request");
+      setAlertType("danger");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 5000);
+    }
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -200,8 +230,20 @@ function ProfilePage() {
     }
   };
 
-  const isPendingUpgrade =
-    localStorage.getItem("upgradeRequestPending") === "true";
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "success";
+      case "rejected":
+        return "danger";
+      case "pending":
+        return "warning";
+      default:
+        return "secondary";
+    }
+  };
+
+  const hasPendingUpgrade = upgradeRequests.some(req => req.status === 'pending');
 
   if (!isLoggedIn) {
     return (
@@ -360,7 +402,7 @@ function ProfilePage() {
                             backgroundColor: "#f8f9fa",
                           }}
                         />
-                        {profile.role === "End User" && !isPendingUpgrade && (
+                        {profile.role === "End User" && !hasPendingUpgrade && (
                           <Button
                             variant="success"
                             size="sm"
@@ -371,7 +413,7 @@ function ProfilePage() {
                             Request Upgrade
                           </Button>
                         )}
-                        {isPendingUpgrade && (
+                        {hasPendingUpgrade && (
                           <Badge bg="warning" className="mt-2 d-block w-auto">
                             Upgrade request pending admin approval
                           </Badge>
@@ -400,9 +442,7 @@ function ProfilePage() {
                   <Row>
                     <Col md={6}>
                       <Form.Group className="mb-4">
-                        <Form.Label className="fw-bold">
-                          Language:
-                        </Form.Label>
+                        <Form.Label className="fw-bold">Language:</Form.Label>
                         <Form.Select
                           name="language"
                           value={profile.language}
@@ -421,6 +461,38 @@ function ProfilePage() {
                       </Form.Group>
                     </Col>
                   </Row>
+
+                  {/* Upgrade Requests History */}
+                  {upgradeRequests.length > 0 && (
+                    <Row>
+                      <Col md={12}>
+                        <Form.Group className="mb-4">
+                          <Form.Label className="fw-bold">Upgrade Request History:</Form.Label>
+                          <div className="mt-2">
+                            {upgradeRequests.map((request, index) => (
+                              <div key={index} className="border rounded p-3 mb-2">
+                                <div className="d-flex justify-content-between align-items-center">
+                                  <div>
+                                    <strong>Request for: {request.requested_role}</strong>
+                                    <Badge 
+                                      bg={getStatusBadgeColor(request.status)} 
+                                      className="ms-2"
+                                    >
+                                      {request.status}
+                                    </Badge>
+                                  </div>
+                                  <small className="text-muted">
+                                    {new Date(request.created_at).toLocaleDateString()}
+                                  </small>
+                                </div>
+                                <p className="mt-2 mb-0 text-muted">{request.reason}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </Form.Group>
+                      </Col>
+                    </Row>
+                  )}
 
                   {/* Action Buttons */}
                   <div className="text-center mt-4">
@@ -471,18 +543,24 @@ function ProfilePage() {
           <Modal.Title>Request Role Upgrade</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>
-            You are requesting to upgrade your role from{" "}
-            <strong>End User</strong> to <strong>Support Agent</strong>.
-          </p>
+          <Form.Group className="mb-3">
+            <Form.Label>Requested Role:</Form.Label>
+            <Form.Select
+              value={upgradeRole}
+              onChange={(e) => setUpgradeRole(e.target.value)}
+            >
+              <option value="Support Agent">Support Agent</option>
+              <option value="Admin">Admin</option>
+            </Form.Select>
+          </Form.Group>
           <Form.Group>
             <Form.Label>Reason for upgrade request:</Form.Label>
             <Form.Control
               as="textarea"
-              rows={3}
+              rows={4}
               value={upgradeMessage}
               onChange={(e) => setUpgradeMessage(e.target.value)}
-              placeholder="Please explain why you need this upgrade..."
+              placeholder="Please explain why you need this upgrade and what qualifications you have..."
             />
           </Form.Group>
           <Alert variant="info" className="mt-3 mb-0">

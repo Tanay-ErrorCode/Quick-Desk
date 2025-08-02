@@ -121,7 +121,7 @@ function RegisterPage() {
         }
 
         // Dispatch custom event for navigation component
-        window.dispatchEvent(new Event('authStateChanged'));
+        window.dispatchEvent(new Event("authStateChanged"));
 
         setAlertMessage("Account created successfully! Redirecting...");
         setAlertType("success");
@@ -131,13 +131,19 @@ function RegisterPage() {
           navigate("/dashboard");
         }, 1500);
       } else {
-        setAlertMessage(response.message || "Registration failed. Please try again.");
+        setAlertMessage(
+          response.message || "Registration failed. Please try again.",
+        );
         setAlertType("danger");
         setShowAlert(true);
         setTimeout(() => setShowAlert(false), 3000);
       }
     } catch (error) {
-      setAlertMessage(error instanceof Error ? error.message : "Network error. Please check your connection.");
+      setAlertMessage(
+        error instanceof Error
+          ? error.message
+          : "Network error. Please check your connection.",
+      );
       setAlertType("danger");
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);

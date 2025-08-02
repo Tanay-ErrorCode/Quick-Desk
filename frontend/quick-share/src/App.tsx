@@ -33,12 +33,14 @@ function App() {
           <Route path="/notifications" element={<AllNotificationsPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-
           {/* Admin Routes */}
           <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
           <Route path="/admin/users" element={<AdminUserManagementPage />} />
           <Route path="/admin/tickets" element={<AdminAllTicketsPage />} />
-          <Route path="/admin/categories" element={<AdminCategoryManagementPage />} />
+          <Route
+            path="/admin/categories"
+            element={<AdminCategoryManagementPage />}
+          />
           <Route path="/admin/agents" element={<AdminUserManagementPage />} />
 
           {/* Staff Routes */}

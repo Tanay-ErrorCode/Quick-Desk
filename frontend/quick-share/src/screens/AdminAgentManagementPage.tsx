@@ -157,7 +157,7 @@ function AdminAgentManagementPage() {
       filtered = filtered.filter(
         (agent) =>
           agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          agent.email.toLowerCase().includes(searchTerm.toLowerCase())
+          agent.email.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
@@ -179,8 +179,8 @@ function AdminAgentManagementPage() {
 
     setAgents((prev) =>
       prev.map((agent) =>
-        agent.id === selectedAgent.id ? selectedAgent : agent
-      )
+        agent.id === selectedAgent.id ? selectedAgent : agent,
+      ),
     );
 
     setShowEditModal(false);
@@ -201,11 +201,11 @@ function AdminAgentManagementPage() {
     }
 
     const agent: Agent = {
-      id: Math.max(...agents.map(a => a.id)) + 1,
+      id: Math.max(...agents.map((a) => a.id)) + 1,
       name: newAgent.name,
       email: newAgent.email,
       status: "Active",
-      joinDate: new Date().toISOString().split('T')[0],
+      joinDate: new Date().toISOString().split("T")[0],
       lastActive: "Never",
       assignedTickets: 0,
       resolvedTickets: 0,
@@ -229,10 +229,11 @@ function AdminAgentManagementPage() {
           ? {
               ...agent,
               status: agent.status === "Active" ? "Inactive" : "Active",
-              assignedTickets: agent.status === "Active" ? 0 : agent.assignedTickets,
+              assignedTickets:
+                agent.status === "Active" ? 0 : agent.assignedTickets,
             }
-          : agent
-      )
+          : agent,
+      ),
     );
 
     setAlertMessage("Agent status updated successfully!");
@@ -334,7 +335,9 @@ function AdminAgentManagementPage() {
               <Card.Body className="p-3">
                 <Row className="g-3 align-items-end">
                   <Col lg={4} md={6}>
-                    <Form.Label className="small fw-bold">Search Agents</Form.Label>
+                    <Form.Label className="small fw-bold">
+                      Search Agents
+                    </Form.Label>
                     <InputGroup>
                       <Form.Control
                         type="text"
@@ -384,7 +387,9 @@ function AdminAgentManagementPage() {
           <Col md={3} sm={6}>
             <Card className="bg-success text-white">
               <Card.Body className="text-center p-3">
-                <h3 className="mb-1">{agents.filter(a => a.status === 'Active').length}</h3>
+                <h3 className="mb-1">
+                  {agents.filter((a) => a.status === "Active").length}
+                </h3>
                 <small>Active Agents</small>
               </Card.Body>
             </Card>
@@ -392,7 +397,9 @@ function AdminAgentManagementPage() {
           <Col md={3} sm={6}>
             <Card className="bg-warning text-white">
               <Card.Body className="text-center p-3">
-                <h3 className="mb-1">{agents.reduce((sum, a) => sum + a.assignedTickets, 0)}</h3>
+                <h3 className="mb-1">
+                  {agents.reduce((sum, a) => sum + a.assignedTickets, 0)}
+                </h3>
                 <small>Total Assigned</small>
               </Card.Body>
             </Card>
@@ -400,7 +407,9 @@ function AdminAgentManagementPage() {
           <Col md={3} sm={6}>
             <Card className="bg-info text-white">
               <Card.Body className="text-center p-3">
-                <h3 className="mb-1">{agents.reduce((sum, a) => sum + a.resolvedTickets, 0)}</h3>
+                <h3 className="mb-1">
+                  {agents.reduce((sum, a) => sum + a.resolvedTickets, 0)}
+                </h3>
                 <small>Total Resolved</small>
               </Card.Body>
             </Card>
@@ -408,7 +417,13 @@ function AdminAgentManagementPage() {
           <Col md={3} sm={6}>
             <Card className="bg-primary text-white">
               <Card.Body className="text-center p-3">
-                <h3 className="mb-1">{Math.round(agents.reduce((sum, a) => sum + a.performance, 0) / agents.length)}%</h3>
+                <h3 className="mb-1">
+                  {Math.round(
+                    agents.reduce((sum, a) => sum + a.performance, 0) /
+                      agents.length,
+                  )}
+                  %
+                </h3>
                 <small>Avg Performance</small>
               </Card.Body>
             </Card>
@@ -439,7 +454,9 @@ function AdminAgentManagementPage() {
                           <td className="px-4 py-3">
                             <div>
                               <div className="fw-bold">{agent.name}</div>
-                              <small className="text-muted">{agent.email}</small>
+                              <small className="text-muted">
+                                {agent.email}
+                              </small>
                             </div>
                           </td>
                           <td className="py-3">
@@ -462,7 +479,11 @@ function AdminAgentManagementPage() {
                           <td className="py-3">
                             <div>
                               {agent.specialty.map((spec, index) => (
-                                <Badge key={index} bg="secondary" className="me-1 mb-1 small">
+                                <Badge
+                                  key={index}
+                                  bg="secondary"
+                                  className="me-1 mb-1 small"
+                                >
                                   {spec}
                                 </Badge>
                               ))}
@@ -481,7 +502,9 @@ function AdminAgentManagementPage() {
                                 ⋮
                               </Dropdown.Toggle>
                               <Dropdown.Menu>
-                                <Dropdown.Item onClick={() => handleEditAgent(agent)}>
+                                <Dropdown.Item
+                                  onClick={() => handleEditAgent(agent)}
+                                >
                                   ✏️ Edit Agent
                                 </Dropdown.Item>
                                 <Dropdown.Item
@@ -492,7 +515,9 @@ function AdminAgentManagementPage() {
                                       : "text-success"
                                   }
                                 >
-                                  {agent.status === "Active" ? "🚫 Deactivate" : "✅ Activate"}
+                                  {agent.status === "Active"
+                                    ? "🚫 Deactivate"
+                                    : "✅ Activate"}
                                 </Dropdown.Item>
                                 <Dropdown.Divider />
                                 <Dropdown.Item className="text-primary">
@@ -551,7 +576,10 @@ function AdminAgentManagementPage() {
                   type="email"
                   value={selectedAgent.email}
                   onChange={(e) =>
-                    setSelectedAgent({ ...selectedAgent, email: e.target.value })
+                    setSelectedAgent({
+                      ...selectedAgent,
+                      email: e.target.value,
+                    })
                   }
                 />
               </Form.Group>

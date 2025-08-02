@@ -11,20 +11,11 @@ import {
 } from "react-bootstrap";
 import { apiService } from "../services/api";
 
-interface Notification {
-  id: number;
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-  type: string;
-}
-
 function Navigation() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState("End User");
   const [userName, setUserName] = useState("User");
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
 
@@ -68,39 +59,19 @@ function Navigation() {
     };
   }, []);
 
-  const loadNotifications = () => {
-    // Sample notifications - replace with API call later
-    const sampleNotifications: Notification[] = [
-      {
-        id: 1,
-        title: "Welcome to QuickDesk!",
-        message:
-          "Your account has been created successfully. Start by creating your first ticket.",
-        time: "2 hours ago",
-        read: false,
-        type: "system",
-      },
-      {
-        id: 2,
-        title: "New Reply on Your Ticket",
-        message:
-          "Someone replied to your question about React vs Vue.js comparison.",
-        time: "1 day ago",
-        read: false,
-        type: "ticket",
-      },
-      {
-        id: 3,
-        title: "Upgrade Request Update",
-        message: "Your upgrade request is being reviewed by the admin team.",
-        time: "2 days ago",
-        read: true,
-        type: "upgrade",
-      },
-    ];
-
-    setNotifications(sampleNotifications);
-    setUnreadCount(sampleNotifications.filter((n) => !n.read).length);
+  const loadNotifications = async () => {
+    try {
+      const response = await apiService.getNotifications({ limit: 10, is_read: false });
+      if (response.success && response.notifications) {
+        setNotifications(response.notifications);
+        setUnreadCount(response.unread_count || response.notifications.length);
+      }
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+      // Fallback to empty array if API fails
+      setNotifications([]);
+      setUnreadCount(0);
+    }
   };
 
   const handleLogout = async () => {
@@ -130,13 +101,18 @@ function Navigation() {
     }
   };
 
-  const markAsRead = (notificationId: number) => {
-    setNotifications((prev) =>
-      prev.map((notif) =>
-        notif.id === notificationId ? { ...notif, read: true } : notif,
-      ),
-    );
-    setUnreadCount((prev) => Math.max(0, prev - 1));
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await apiService.markNotificationAsRead(notificationId);
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif.id === notificationId ? { ...notif, is_read: true } : notif,
+        ),
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
   };
 
   const getNotificationIcon = (type: string) => {
@@ -147,6 +123,10 @@ function Navigation() {
         return "⬆️";
       case "system":
         return "⚙️";
+      case "assignment":
+        return "📝";
+      case "reply":
+        return "💬";
       default:
         return "📢";
     }
@@ -165,7 +145,19 @@ function Navigation() {
     }
   };
 
+  const formatTimeAgo = (timestamp: string) => {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffInMinutes = Math.floor((now.getTime() - time.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return "Just now";
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+  };
+
   return (
+    <div>
     <Navbar bg="white" expand="lg" className="border-bottom shadow-sm">
       <Container>
         <Navbar.Brand as={Link} to="/" className="fw-bold text-primary">
@@ -237,7 +229,7 @@ function Navigation() {
                       notifications.slice(0, 5).map((notification) => (
                         <Dropdown.Item
                           key={notification.id}
-                          className={`${!notification.read ? 'bg-light' : ''} border-bottom`}
+                          className={`${!notification.is_read ? 'bg-light' : ''} border-bottom`}
                           onClick={() => markAsRead(notification.id)}
                           style={{ whiteSpace: "normal", padding: "10px 15px" }}
                         >
@@ -253,10 +245,10 @@ function Navigation() {
                                 {notification.message}
                               </div>
                               <div className="text-muted" style={{ fontSize: "0.75rem" }}>
-                                {notification.time}
+                                {formatTimeAgo(notification.created_at)}
                               </div>
                             </div>
-                            {!notification.read && (
+                            {!notification.is_read && (
                               <Badge bg="primary" className="ms-2" style={{ fontSize: "0.6rem" }}>
                                 New
                               </Badge>
@@ -281,7 +273,7 @@ function Navigation() {
                   id="user-nav-dropdown"
                   align="end"
                 >
-                  <NavDropdown.Item as={Link} to="/profile">
+                  <NavDropdown.Item as={Link as any} to="/profile">
                     👤 Profile
                   </NavDropdown.Item>
                   
@@ -289,16 +281,16 @@ function Navigation() {
                     <>
                       <NavDropdown.Divider />
                       <NavDropdown.Header>Admin Panel</NavDropdown.Header>
-                      <NavDropdown.Item as={Link} to="/admin/dashboard">
+                      <NavDropdown.Item as={Link as any} to="/admin/dashboard">
                         🛡️ Admin Dashboard
                       </NavDropdown.Item>
-                      <NavDropdown.Item as={Link} to="/admin/users">
+                      <NavDropdown.Item as={Link as any} to="/admin/users">
                         👥 User Management
                       </NavDropdown.Item>
-                      <NavDropdown.Item as={Link} to="/admin/tickets">
+                      <NavDropdown.Item as={Link as any} to="/admin/tickets">
                         🎫 All Tickets
                       </NavDropdown.Item>
-                      <NavDropdown.Item as={Link} to="/admin/categories">
+                      <NavDropdown.Item as={Link as any} to="/admin/categories">
                         📂 Categories
                       </NavDropdown.Item>
                     </>
@@ -307,7 +299,7 @@ function Navigation() {
                   {userRole === "Support Agent" && (
                     <>
                       <NavDropdown.Divider />
-                      <NavDropdown.Item as={Link} to="/staff/dashboard">
+                      <NavDropdown.Item as={Link as any} to="/staff/dashboard">
                         🛠️ Staff Dashboard
                       </NavDropdown.Item>
                     </>
@@ -322,14 +314,14 @@ function Navigation() {
             ) : (
               <>
                 <Button
-                  as={Link}
+                  as={Link as any}
                   to="/login"
                   variant="outline-primary"
                   className="me-2"
                 >
                   Login
                 </Button>
-                <Button as={Link} to="/register" variant="primary">
+                <Button as={Link as any} to="/register" variant="primary">
                   Sign Up
                 </Button>
               </>
@@ -337,6 +329,7 @@ function Navigation() {
           </Nav>
         </Navbar.Collapse>
       </Container>
+      </Navbar>
     </div>
   );
 }

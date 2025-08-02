@@ -105,7 +105,9 @@ function AdminDashboardPage() {
   });
   const [upgradeRequests, setUpgradeRequests] = useState<UpgradeRequest[]>([]);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<UpgradeRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<UpgradeRequest | null>(
+    null,
+  );
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -149,7 +151,8 @@ function AdminDashboardPage() {
         recentActivity: [
           {
             id: 1,
-            action: "New upgrade request from John Doe (End User → Support Agent)",
+            action:
+              "New upgrade request from John Doe (End User → Support Agent)",
             time: "5 minutes ago",
             type: "upgrade",
             urgent: true,
@@ -189,7 +192,8 @@ function AdminDashboardPage() {
           userEmail: "john.doe@company.com",
           currentRole: "End User",
           requestedRole: "Support Agent",
-          reason: "I have 3 years of technical support experience and would like to help resolve tickets for other users.",
+          reason:
+            "I have 3 years of technical support experience and would like to help resolve tickets for other users.",
           requestDate: "2025-01-30",
         },
         {
@@ -198,7 +202,8 @@ function AdminDashboardPage() {
           userEmail: "alice.wilson@company.com",
           currentRole: "End User",
           requestedRole: "Support Agent",
-          reason: "I have expertise in database administration and can help with database-related queries.",
+          reason:
+            "I have expertise in database administration and can help with database-related queries.",
           requestDate: "2025-01-29",
         },
         {
@@ -207,7 +212,8 @@ function AdminDashboardPage() {
           userEmail: "bob.martinez@company.com",
           currentRole: "End User",
           requestedRole: "Support Agent",
-          reason: "I work in DevOps and can assist with deployment and infrastructure issues.",
+          reason:
+            "I work in DevOps and can assist with deployment and infrastructure issues.",
           requestDate: "2025-01-28",
         },
       ];
@@ -217,12 +223,16 @@ function AdminDashboardPage() {
     }
   }, [navigate]);
 
-  const handleUpgradeRequest = (request: UpgradeRequest, action: "approve" | "reject") => {
-    setUpgradeRequests(prev => prev.filter(req => req.id !== request.id));
-    setDashboardData(prev => ({
+  const handleUpgradeRequest = (
+    request: UpgradeRequest,
+    action: "approve" | "reject",
+  ) => {
+    setUpgradeRequests((prev) => prev.filter((req) => req.id !== request.id));
+    setDashboardData((prev) => ({
       ...prev,
       pendingUpgrades: prev.pendingUpgrades - 1,
-      totalAgents: action === "approve" ? prev.totalAgents + 1 : prev.totalAgents,
+      totalAgents:
+        action === "approve" ? prev.totalAgents + 1 : prev.totalAgents,
     }));
     setShowUpgradeModal(false);
     setSelectedRequest(null);
@@ -274,7 +284,9 @@ function AdminDashboardPage() {
             <Col xs={12} sm={10} md={8} lg={6}>
               <Card className="text-center shadow">
                 <Card.Body className="p-4">
-                  <h3 className="mb-3">Please log in to access admin dashboard</h3>
+                  <h3 className="mb-3">
+                    Please log in to access admin dashboard
+                  </h3>
                   <Link to="/login" className="btn btn-primary btn-lg">
                     Login
                   </Link>
@@ -320,9 +332,7 @@ function AdminDashboardPage() {
           <Col xs={12}>
             <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
               <div className="flex-grow-1">
-                <h2 className="fw-bold text-dark mb-1">
-                  🛡️ Admin Dashboard
-                </h2>
+                <h2 className="fw-bold text-dark mb-1">🛡️ Admin Dashboard</h2>
                 <p className="text-muted mb-0 d-none d-sm-block">
                   System overview and management tools
                 </p>
@@ -360,7 +370,8 @@ function AdminDashboardPage() {
                         🚨 Pending Upgrade Requests
                       </h6>
                       <p className="mb-0 text-dark">
-                        {upgradeRequests.length} user(s) requesting role upgrades - Review needed
+                        {upgradeRequests.length} user(s) requesting role
+                        upgrades - Review needed
                       </p>
                     </div>
                     <Button
@@ -384,7 +395,9 @@ function AdminDashboardPage() {
             <Card style={customStyles.statCard}>
               <Card.Body className="text-center p-3 p-md-4">
                 <div className="display-6 display-md-4 mb-2">👥</div>
-                <h4 className="h3 h-md-2 fw-bold mb-1">{dashboardData.totalUsers}</h4>
+                <h4 className="h3 h-md-2 fw-bold mb-1">
+                  {dashboardData.totalUsers}
+                </h4>
                 <p className="mb-0 opacity-75 small">Total Users</p>
               </Card.Body>
             </Card>
@@ -393,7 +406,9 @@ function AdminDashboardPage() {
             <Card style={customStyles.statCard}>
               <Card.Body className="text-center p-3 p-md-4">
                 <div className="display-6 display-md-4 mb-2">🛠️</div>
-                <h4 className="h3 h-md-2 fw-bold mb-1">{dashboardData.totalAgents}</h4>
+                <h4 className="h3 h-md-2 fw-bold mb-1">
+                  {dashboardData.totalAgents}
+                </h4>
                 <p className="mb-0 opacity-75 small">Support Agents</p>
               </Card.Body>
             </Card>
@@ -402,7 +417,9 @@ function AdminDashboardPage() {
             <Card style={customStyles.statCard}>
               <Card.Body className="text-center p-3 p-md-4">
                 <div className="display-6 display-md-4 mb-2">🎫</div>
-                <h4 className="h3 h-md-2 fw-bold mb-1">{dashboardData.totalTickets}</h4>
+                <h4 className="h3 h-md-2 fw-bold mb-1">
+                  {dashboardData.totalTickets}
+                </h4>
                 <p className="mb-0 opacity-75 small">Total Tickets</p>
               </Card.Body>
             </Card>
@@ -411,7 +428,9 @@ function AdminDashboardPage() {
             <Card style={customStyles.statCard}>
               <Card.Body className="text-center p-3 p-md-4">
                 <div className="display-6 display-md-4 mb-2">📝</div>
-                <h4 className="h3 h-md-2 fw-bold mb-1">{dashboardData.openTickets}</h4>
+                <h4 className="h3 h-md-2 fw-bold mb-1">
+                  {dashboardData.openTickets}
+                </h4>
                 <p className="mb-0 opacity-75 small">Open Tickets</p>
               </Card.Body>
             </Card>
@@ -420,7 +439,9 @@ function AdminDashboardPage() {
             <Card style={customStyles.statCard}>
               <Card.Body className="text-center p-3 p-md-4">
                 <div className="display-6 display-md-4 mb-2">✅</div>
-                <h4 className="h3 h-md-2 fw-bold mb-1">{dashboardData.closedTickets}</h4>
+                <h4 className="h3 h-md-2 fw-bold mb-1">
+                  {dashboardData.closedTickets}
+                </h4>
                 <p className="mb-0 opacity-75 small">Resolved</p>
               </Card.Body>
             </Card>
@@ -429,7 +450,9 @@ function AdminDashboardPage() {
             <Card style={customStyles.statCard}>
               <Card.Body className="text-center p-3 p-md-4">
                 <div className="display-6 display-md-4 mb-2">⬆️</div>
-                <h4 className="h3 h-md-2 fw-bold mb-1">{dashboardData.pendingUpgrades}</h4>
+                <h4 className="h3 h-md-2 fw-bold mb-1">
+                  {dashboardData.pendingUpgrades}
+                </h4>
                 <p className="mb-0 opacity-75 small">Pending Upgrades</p>
               </Card.Body>
             </Card>
@@ -476,7 +499,11 @@ function AdminDashboardPage() {
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={dashboardData.agentPerformance}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" fontSize={10} tick={{ fontSize: 10 }} />
+                    <XAxis
+                      dataKey="name"
+                      fontSize={10}
+                      tick={{ fontSize: 10 }}
+                    />
                     <YAxis fontSize={12} tick={{ fontSize: 12 }} />
                     <Tooltip />
                     <Bar dataKey="resolved" fill="#28a745" name="Resolved" />
@@ -495,7 +522,10 @@ function AdminDashboardPage() {
               <Card.Body className="p-3 p-md-4">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h6 className="fw-bold mb-0">🔔 Recent System Activity</h6>
-                  <Link to="/admin/activity" className="btn btn-outline-primary btn-sm">
+                  <Link
+                    to="/admin/activity"
+                    className="btn btn-outline-primary btn-sm"
+                  >
                     View All
                   </Link>
                 </div>
@@ -507,14 +537,18 @@ function AdminDashboardPage() {
                       className="d-flex align-items-start mb-2 border-start border-4 p-2 p-md-3"
                       style={{
                         borderLeftColor: `var(--bs-${getActivityColor(activity.type)})`,
-                        backgroundColor: activity.urgent ? "#fff3cd" : undefined,
+                        backgroundColor: activity.urgent
+                          ? "#fff3cd"
+                          : undefined,
                       }}
                     >
                       <span className="me-2 me-md-3 fs-6 fs-md-5 flex-shrink-0">
                         {getActivityIcon(activity.type)}
                       </span>
                       <div className="flex-grow-1 min-w-0">
-                        <div className={`fw-medium small text-break ${activity.urgent ? "text-dark" : ""}`}>
+                        <div
+                          className={`fw-medium small text-break ${activity.urgent ? "text-dark" : ""}`}
+                        >
                           {activity.action}
                         </div>
                         <small className="text-muted">{activity.time}</small>
@@ -528,7 +562,11 @@ function AdminDashboardPage() {
                           {activity.type}
                         </Badge>
                         {activity.urgent && (
-                          <Badge bg="danger" className="flex-shrink-0" style={{ fontSize: "0.7rem" }}>
+                          <Badge
+                            bg="danger"
+                            className="flex-shrink-0"
+                            style={{ fontSize: "0.7rem" }}
+                          >
                             Urgent
                           </Badge>
                         )}
@@ -548,16 +586,32 @@ function AdminDashboardPage() {
               <Card.Body className="p-3 p-md-4">
                 <h6 className="fw-bold mb-3">⚡ Quick Actions</h6>
                 <div className="d-flex flex-wrap gap-2">
-                  <Link to="/admin/users" className="btn btn-outline-primary" style={customStyles.customButton}>
+                  <Link
+                    to="/admin/users"
+                    className="btn btn-outline-primary"
+                    style={customStyles.customButton}
+                  >
                     👥 Manage Users
                   </Link>
-                  <Link to="/admin/tickets" className="btn btn-outline-success" style={customStyles.customButton}>
+                  <Link
+                    to="/admin/tickets"
+                    className="btn btn-outline-success"
+                    style={customStyles.customButton}
+                  >
                     🎫 All Tickets
                   </Link>
-                  <Link to="/admin/categories" className="btn btn-outline-warning" style={customStyles.customButton}>
+                  <Link
+                    to="/admin/categories"
+                    className="btn btn-outline-warning"
+                    style={customStyles.customButton}
+                  >
                     📂 Categories
                   </Link>
-                  <Link to="/admin/agents" className="btn btn-outline-info" style={customStyles.customButton}>
+                  <Link
+                    to="/admin/agents"
+                    className="btn btn-outline-info"
+                    style={customStyles.customButton}
+                  >
                     🛠️ Agent Management
                   </Link>
                 </div>
@@ -568,7 +622,11 @@ function AdminDashboardPage() {
       </Container>
 
       {/* Upgrade Requests Modal */}
-      <Modal show={showUpgradeModal} onHide={() => setShowUpgradeModal(false)} size="lg">
+      <Modal
+        show={showUpgradeModal}
+        onHide={() => setShowUpgradeModal(false)}
+        size="lg"
+      >
         <Modal.Header closeButton>
           <Modal.Title>🔐 Role Upgrade Requests</Modal.Title>
         </Modal.Header>
@@ -585,12 +643,15 @@ function AdminDashboardPage() {
                     <div className="d-flex justify-content-between align-items-start mb-3">
                       <div>
                         <h6 className="fw-bold">{request.userName}</h6>
-                        <small className="text-muted">{request.userEmail}</small>
+                        <small className="text-muted">
+                          {request.userEmail}
+                        </small>
                       </div>
                       <Badge bg="warning">{request.requestDate}</Badge>
                     </div>
                     <div className="mb-3">
-                      <strong>Role Change:</strong> {request.currentRole} → {request.requestedRole}
+                      <strong>Role Change:</strong> {request.currentRole} →{" "}
+                      {request.requestedRole}
                     </div>
                     <div className="mb-3">
                       <strong>Reason:</strong>

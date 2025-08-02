@@ -5,88 +5,78 @@ import {
   Row,
   Col,
   Card,
-  Alert,
+  Table,
   Badge,
+  Button,
+  Form,
+  Alert,
+  Spinner,
   ProgressBar,
 } from "react-bootstrap";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  ResponsiveContainer,
-} from "recharts";
 import Navigation from "../components/Navigation";
+import { apiService, Ticket } from "../services/api";
 
 const customStyles = {
   dashboardCard: {
-    borderRadius: "15px",
+    borderRadius: "20px",
     border: "none",
-    boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
     transition: "transform 0.3s ease",
-    height: "100%",
   },
   statCard: {
+    borderRadius: "15px",
+    border: "none",
+    boxShadow: "0 5px 20px rgba(0,0,0,0.1)",
     background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
     color: "white",
-    borderRadius: "15px",
-    border: "none",
-    height: "100%",
-  },
-  chartCard: {
-    background: "linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%)",
-    borderRadius: "15px",
-    border: "none",
-    minHeight: "350px",
+    textAlign: "center" as const,
   },
   customButton: {
     borderRadius: "25px",
-    padding: "8px 20px",
+    padding: "12px 30px",
     fontWeight: "600",
-    fontSize: "0.9rem",
+  },
+  recentTicketCard: {
+    borderRadius: "15px",
+    border: "1px solid #e9ecef",
+    marginBottom: "15px",
+    transition: "all 0.3s ease",
+  },
+  urgentTicket: {
+    borderLeft: "4px solid #dc3545",
+    backgroundColor: "#fff5f5",
   },
 };
 
-interface UserDashboardData {
-  myQuestionsAsked: number;
-  myRepliesGiven: number;
-  myTicketsOpen: number;
-  myTicketsResolved: number;
-  myCategoryData: Array<{ name: string; count: number; color: string }>;
-  myMonthlyData: Array<{ month: string; questions: number; replies: number }>;
-  myRecentActivity: Array<{
-    id: number;
-    action: string;
-    time: string;
-    type: string;
-  }>;
-  reputation: number;
-  helpfulVotes: number;
+interface DashboardStats {
+  totalTickets: number;
+  openTickets: number;
+  inProgressTickets: number;
+  resolvedTickets: number;
+  closedTickets: number;
+  urgentTickets: number;
+  myTickets: number;
+  assignedToMe?: number;
 }
 
 function DashboardPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState("End User");
   const [userName, setUserName] = useState("User");
-  const [dashboardData, setDashboardData] = useState<UserDashboardData>({
-    myQuestionsAsked: 0,
-    myRepliesGiven: 0,
-    myTicketsOpen: 0,
-    myTicketsResolved: 0,
-    myCategoryData: [],
-    myMonthlyData: [],
-    myRecentActivity: [],
-    reputation: 0,
-    helpfulVotes: 0,
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalTickets: 0,
+    openTickets: 0,
+    inProgressTickets: 0,
+    resolvedTickets: 0,
+    closedTickets: 0,
+    urgentTickets: 0,
+    myTickets: 0,
   });
+  const [recentTickets, setRecentTickets] = useState<Ticket[]>([]);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState<"success" | "danger" | "info">("info");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -94,111 +84,138 @@ function DashboardPage() {
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
     const role = localStorage.getItem("userRole") || "End User";
     const name = localStorage.getItem("userName") || "User";
+    
     setIsLoggedIn(loggedIn);
     setUserRole(role);
     setUserName(name);
 
-    if (loggedIn && role === 'Admin') {
-      navigate('/admin/dashboard');
+    if (!loggedIn) {
+      navigate("/login");
       return;
     }
-    if (loggedIn && role === 'Support Agent') {
-      navigate('/staff/dashboard');
-      return;
-    }
-    if (loggedIn) {
-      // Simulate loading user's personal dashboard data
-      const userPersonalData: UserDashboardData = {
-        myQuestionsAsked: 12,
-        myRepliesGiven: 8,
-        myTicketsOpen: 3,
-        myTicketsResolved: 9,
-        reputation: 245,
-        helpfulVotes: 23,
-        myCategoryData: [
-          { name: "Technical", count: 5, color: "#8884d8" },
-          { name: "Development", count: 4, color: "#82ca9d" },
-          { name: "Database", count: 2, color: "#ffc658" },
-          { name: "UI/UX", count: 1, color: "#8dd1e1" },
-        ],
-        myMonthlyData: [
-          { month: "Jan", questions: 2, replies: 1 },
-          { month: "Feb", questions: 1, replies: 2 },
-          { month: "Mar", questions: 3, replies: 1 },
-          { month: "Apr", questions: 2, replies: 2 },
-          { month: "May", questions: 2, replies: 1 },
-          { month: "Jun", questions: 2, replies: 1 },
-        ],
-        myRecentActivity: [
-          {
-            id: 1,
-            action: "You posted a new question in Technical category",
-            time: "2 hours ago",
-            type: "question",
-          },
-          {
-            id: 2,
-            action: 'You replied to "React vs Vue" discussion',
-            time: "1 day ago",
-            type: "reply",
-          },
-          {
-            id: 3,
-            action: "Your question received an upvote",
-            time: "2 days ago",
-            type: "upvote",
-          },
-          {
-            id: 4,
-            action: "You marked a ticket as resolved",
-            time: "3 days ago",
-            type: "resolved",
-          },
-          {
-            id: 5,
-            action: "You submitted an upgrade request",
-            time: "1 week ago",
-            type: "upgrade",
-          },
-        ],
-      };
 
-      setDashboardData(userPersonalData);
-    }
-  }, []);
+    loadDashboardData();
+  }, [navigate]);
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case "question":
-        return "❓";
-      case "reply":
-        return "💬";
-      case "upvote":
-        return "👍";
-      case "resolved":
-        return "✅";
-      case "upgrade":
-        return "⬆️";
-      default:
-        return "📝";
+  const loadDashboardData = async () => {
+    try {
+      setIsLoading(true);
+
+      // Load dashboard data based on user role
+      let dashboardResponse;
+      if (userRole === "Admin") {
+        dashboardResponse = await apiService.getAdminDashboard();
+      } else if (userRole === "Support Agent") {
+        dashboardResponse = await apiService.getStaffDashboard();
+      } else {
+        dashboardResponse = await apiService.getUserDashboard();
+      }
+
+      if (dashboardResponse.success && dashboardResponse.data) {
+        // Extract stats from API response
+        const data = dashboardResponse.data;
+        setStats({
+          totalTickets: data.totalTickets || 0,
+          openTickets: data.openTickets || 0,
+          inProgressTickets: data.inProgressTickets || 0,
+          resolvedTickets: data.resolvedTickets || 0,
+          closedTickets: data.closedTickets || 0,
+          urgentTickets: data.urgentTickets || 0,
+          myTickets: data.myTickets || 0,
+          assignedToMe: data.assignedToMe,
+        });
+
+        // Set recent tickets if available
+        if (data.recentTickets) {
+          setRecentTickets(data.recentTickets);
+        }
+      } else {
+        // Fallback: Load tickets and calculate stats manually
+        const ticketsResponse = await apiService.getTickets({ limit: 50 });
+        
+        if (ticketsResponse.success && ticketsResponse.tickets) {
+          const tickets = ticketsResponse.tickets;
+          const userId = localStorage.getItem("userId");
+          
+          const calculatedStats: DashboardStats = {
+            totalTickets: tickets.length,
+            openTickets: tickets.filter(t => t.status === "open").length,
+            inProgressTickets: tickets.filter(t => t.status === "in_progress").length,
+            resolvedTickets: tickets.filter(t => t.status === "resolved").length,
+            closedTickets: tickets.filter(t => t.status === "closed").length,
+            urgentTickets: tickets.filter(t => t.is_urgent).length,
+            myTickets: tickets.filter(t => t.author.id === userId).length,
+            assignedToMe: userRole === "Support Agent" || userRole === "Admin" 
+              ? tickets.filter(t => t.assigned_to?.id === userId).length 
+              : undefined,
+          };
+
+          setStats(calculatedStats);
+          
+          // Get recent tickets (last 10)
+          const sortedTickets = tickets
+            .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+            .slice(0, 10);
+          setRecentTickets(sortedTickets);
+        }
+      }
+
+    } catch (error: any) {
+      console.error("Error loading dashboard data:", error);
+      setAlertMessage("Failed to load dashboard data. Some information may be unavailable.");
+      setAlertType("info");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 5000);
+      
+      // Set minimal fallback data
+      setStats({
+        totalTickets: 0,
+        openTickets: 0,
+        inProgressTickets: 0,
+        resolvedTickets: 0,
+        closedTickets: 0,
+        urgentTickets: 0,
+        myTickets: 0,
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getActivityColor = (type: string) => {
-    switch (type) {
-      case "question":
-        return "primary";
-      case "reply":
-        return "success";
-      case "upvote":
-        return "warning";
-      case "resolved":
-        return "success";
-      case "upgrade":
-        return "info";
-      default:
-        return "secondary";
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high": return "danger";
+      case "medium": return "warning";
+      case "low": return "success";
+      default: return "secondary";
     }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "open": return "primary";
+      case "in_progress": return "warning";
+      case "resolved": return "success";
+      case "closed": return "secondary";
+      default: return "secondary";
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "in_progress": return "In Progress";
+      default: return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString() + " " +
+           new Date(dateString).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  };
+
+  const getCompletionRate = () => {
+    if (stats.totalTickets === 0) return 0;
+    return Math.round(((stats.resolvedTickets + stats.closedTickets) / stats.totalTickets) * 100);
   };
 
   if (!isLoggedIn) {
@@ -207,17 +224,33 @@ function DashboardPage() {
         <Navigation />
         <Container className="mt-5">
           <Row className="justify-content-center">
-            <Col xs={12} sm={10} md={8} lg={6}>
-              <Card className="text-center shadow">
-                <Card.Body className="p-4">
-                  <h3 className="mb-3">Please log in to view your dashboard</h3>
-                  <Link to="/login" className="btn btn-primary btn-lg">
+            <Col md={6}>
+              <Card className="text-center">
+                <Card.Body>
+                  <h3>Please log in to view your dashboard</h3>
+                  <Link to="/login" className="btn btn-primary mt-3">
                     Login
                   </Link>
                 </Card.Body>
               </Card>
             </Col>
           </Row>
+        </Container>
+      </>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <>
+        <Navigation />
+        <Container className="py-5">
+          <div className="text-center">
+            <Spinner animation="border" role="status" className="mb-3">
+              <span className="visually-hidden">Loading...</span>
+            </Spinner>
+            <p>Loading dashboard...</p>
+          </div>
         </Container>
       </>
     );
@@ -230,314 +263,285 @@ function DashboardPage() {
       <Container fluid className="px-3 px-md-4 py-4">
         {/* Header */}
         <Row className="mb-4">
-          <Col xs={12}>
-            <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
-              <div className="flex-grow-1">
-                <h2 className="fw-bold text-dark mb-1">My Dashboard</h2>
-                <p className="text-muted mb-0 d-none d-sm-block">
-                  Welcome back, {userName}! Here's your personal activity
-                  overview
-                </p>
-                <p className="text-muted mb-0 d-sm-none">
-                  Welcome back, {userName}!
+          <Col>
+            <div className="d-flex justify-content-between align-items-center">
+              <div>
+                <h2 className="fw-bold text-dark mb-1">
+                  {userRole === "Admin" ? "🛡️ Admin Dashboard" :
+                   userRole === "Support Agent" ? "🛠️ Support Dashboard" :
+                   "📊 My Dashboard"}
+                </h2>
+                <p className="text-muted mb-0">
+                  Welcome back, {userName}! Here's what's happening with your tickets.
                 </p>
               </div>
-              <div className="d-flex flex-wrap gap-2 align-items-center">
-                <Badge bg="info" className="fs-6 px-3 py-2">
-                  {userRole}
-                </Badge>
-                <Badge bg="warning" className="fs-6 px-3 py-2">
-                  ⭐ {dashboardData.reputation} pts
-                </Badge>
+              <div className="d-flex gap-2">
+                <Button
+                  variant="outline-primary"
+                  onClick={() => window.location.reload()}
+                  style={customStyles.customButton}
+                >
+                  🔄 Refresh
+                </Button>
                 <Link
                   to="/create-ticket"
                   className="btn btn-primary"
                   style={customStyles.customButton}
                 >
-                  <span className="d-none d-sm-inline">Ask Question</span>
-                  <span className="d-sm-none">Ask</span>
+                  ➕ Create Ticket
                 </Link>
               </div>
             </div>
           </Col>
         </Row>
 
-        {/* Personal Statistics Cards */}
-        <Row className="mb-4 g-3 g-md-4">
-          <Col xs={6} lg={3}>
-            <Card style={customStyles.statCard}>
-              <Card.Body className="text-center p-3 p-md-4">
-                <div className="display-6 display-md-4 mb-2">❓</div>
-                <h4 className="h3 h-md-2 fw-bold mb-1">
-                  {dashboardData.myQuestionsAsked}
-                </h4>
-                <p className="mb-0 opacity-75 small">My Questions</p>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col xs={6} lg={3}>
-            <Card style={customStyles.statCard}>
-              <Card.Body className="text-center p-3 p-md-4">
-                <div className="display-6 display-md-4 mb-2">💬</div>
-                <h4 className="h3 h-md-2 fw-bold mb-1">
-                  {dashboardData.myRepliesGiven}
-                </h4>
-                <p className="mb-0 opacity-75 small">My Replies</p>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col xs={6} lg={3}>
-            <Card style={customStyles.statCard}>
-              <Card.Body className="text-center p-3 p-md-4">
-                <div className="display-6 display-md-4 mb-2">🎫</div>
-                <h4 className="h3 h-md-2 fw-bold mb-1">
-                  {dashboardData.myTicketsOpen}
-                </h4>
-                <p className="mb-0 opacity-75 small">Open Tickets</p>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col xs={6} lg={3}>
-            <Card style={customStyles.statCard}>
-              <Card.Body className="text-center p-3 p-md-4">
-                <div className="display-6 display-md-4 mb-2">✅</div>
-                <h4 className="h3 h-md-2 fw-bold mb-1">
-                  {dashboardData.myTicketsResolved}
-                </h4>
-                <p className="mb-0 opacity-75 small">Resolved</p>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+        {/* Alert */}
+        {showAlert && (
+          <Alert variant={alertType} className="mb-4">
+            {alertMessage}
+          </Alert>
+        )}
 
-        {/* Main Dashboard Chart */}
-        <Row className="mb-4">
-          <Col xs={12}>
-            <Card style={customStyles.chartCard}>
-              <Card.Body className="p-3 p-md-4">
-                <h5 className="fw-bold text-white mb-3 mb-md-4">
-                  📊 My Activity Over Time
-                </h5>
-                <div
-                  className="bg-white rounded p-2 p-md-3"
-                  style={{ minHeight: "250px" }}
-                >
-                  <h6 className="text-dark mb-3 d-none d-md-block">
-                    My Monthly Questions vs Replies
-                  </h6>
-                  <h6 className="text-dark mb-3 d-md-none small">
-                    Monthly Activity
-                  </h6>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={dashboardData.myMonthlyData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="month"
-                        fontSize={12}
-                        tick={{ fontSize: 12 }}
-                      />
-                      <YAxis fontSize={12} tick={{ fontSize: 12 }} />
-                      <Tooltip />
-                      <Legend />
-                      <Line
-                        type="monotone"
-                        dataKey="questions"
-                        stroke="#667eea"
-                        strokeWidth={2}
-                        name="Questions"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="replies"
-                        stroke="#56ab2f"
-                        strokeWidth={2}
-                        name="Replies"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
+        {/* Stats Cards */}
+        <Row className="mb-5 g-4">
+          <Col xl={3} lg={4} md={6}>
+            <Card style={customStyles.statCard} className="text-white">
+              <Card.Body className="p-4">
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <h3 className="fw-bold mb-1">{stats.totalTickets}</h3>
+                    <p className="mb-0">Total Tickets</p>
+                  </div>
+                  <div style={{ fontSize: "2.5rem", opacity: 0.7 }}>🎫</div>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+
+          <Col xl={3} lg={4} md={6}>
+            <Card style={{...customStyles.statCard, background: "linear-gradient(135deg, #28a745 0%, #20c997 100%)"}}>
+              <Card.Body className="p-4">
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <h3 className="fw-bold mb-1">{stats.openTickets}</h3>
+                    <p className="mb-0">Open Tickets</p>
+                  </div>
+                  <div style={{ fontSize: "2.5rem", opacity: 0.7 }}>🟢</div>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+
+          <Col xl={3} lg={4} md={6}>
+            <Card style={{...customStyles.statCard, background: "linear-gradient(135deg, #ffc107 0%, #fd7e14 100%)"}}>
+              <Card.Body className="p-4">
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <h3 className="fw-bold mb-1">{stats.inProgressTickets}</h3>
+                    <p className="mb-0">In Progress</p>
+                  </div>
+                  <div style={{ fontSize: "2.5rem", opacity: 0.7 }}>🔄</div>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+
+          <Col xl={3} lg={4} md={6}>
+            <Card style={{...customStyles.statCard, background: "linear-gradient(135deg, #dc3545 0%, #e83e8c 100%)"}}>
+              <Card.Body className="p-4">
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <h3 className="fw-bold mb-1">{stats.urgentTickets}</h3>
+                    <p className="mb-0">Urgent</p>
+                  </div>
+                  <div style={{ fontSize: "2.5rem", opacity: 0.7 }}>🚨</div>
                 </div>
               </Card.Body>
             </Card>
           </Col>
         </Row>
 
-        {/* Charts Row */}
-        <Row className="mb-4 g-3 g-md-4">
-          {/* My Category Distribution */}
-          <Col xs={12} lg={6}>
+        {/* Secondary Stats */}
+        <Row className="mb-5 g-4">
+          <Col md={4}>
             <Card style={customStyles.dashboardCard}>
-              <Card.Body className="p-3 p-md-4">
-                <h6 className="fw-bold mb-3 mb-md-4">
-                  📂 My Questions by Category
-                </h6>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={dashboardData.myCategoryData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={60}
-                      fill="#8884d8"
-                      dataKey="count"
-                      label={({ name, percent }) =>
-                        `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
-                      }
-                      labelLine={false}
-                    >
-                      {dashboardData.myCategoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+              <Card.Body className="p-4">
+                <h6 className="fw-bold mb-3">📈 Completion Rate</h6>
+                <div className="d-flex align-items-center justify-content-between mb-2">
+                  <span>Resolved & Closed</span>
+                  <span className="fw-bold">{getCompletionRate()}%</span>
+                </div>
+                <ProgressBar
+                  variant={getCompletionRate() > 70 ? "success" : getCompletionRate() > 40 ? "warning" : "danger"}
+                  now={getCompletionRate()}
+                  style={{ height: "8px", borderRadius: "10px" }}
+                />
+                <small className="text-muted mt-2 d-block">
+                  {stats.resolvedTickets + stats.closedTickets} of {stats.totalTickets} tickets completed
+                </small>
               </Card.Body>
             </Card>
           </Col>
 
-          {/* My Category Bar Chart */}
-          <Col xs={12} lg={6}>
+          <Col md={4}>
             <Card style={customStyles.dashboardCard}>
-              <Card.Body className="p-3 p-md-4">
-                <h6 className="fw-bold mb-3 mb-md-4">
-                  📊 Question Count by Category
-                </h6>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={dashboardData.myCategoryData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="name"
-                      fontSize={12}
-                      tick={{ fontSize: 12 }}
-                    />
-                    <YAxis fontSize={12} tick={{ fontSize: 12 }} />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#667eea" />
-                  </BarChart>
-                </ResponsiveContainer>
+              <Card.Body className="p-4 text-center">
+                <h6 className="fw-bold mb-3">👤 My Tickets</h6>
+                <h3 className="text-primary fw-bold mb-2">{stats.myTickets}</h3>
+                <p className="text-muted mb-0">Tickets created by you</p>
+                <Link to="/forum?author=me" className="btn btn-outline-primary btn-sm mt-2">
+                  View All
+                </Link>
               </Card.Body>
             </Card>
           </Col>
+
+          {(userRole === "Support Agent" || userRole === "Admin") && (
+            <Col md={4}>
+              <Card style={customStyles.dashboardCard}>
+                <Card.Body className="p-4 text-center">
+                  <h6 className="fw-bold mb-3">📋 Assigned to Me</h6>
+                  <h3 className="text-warning fw-bold mb-2">{stats.assignedToMe || 0}</h3>
+                  <p className="text-muted mb-0">Tickets assigned to you</p>
+                  <Link to="/staff/dashboard" className="btn btn-outline-warning btn-sm mt-2">
+                    Manage
+                  </Link>
+                </Card.Body>
+              </Card>
+            </Col>
+          )}
         </Row>
 
-        {/* Recent Activity & Personal Stats */}
-        <Row className="g-3 g-md-4">
-          {/* My Recent Activity */}
-          <Col xs={12} xl={8}>
+        <Row>
+          {/* Recent Tickets */}
+          <Col lg={8}>
             <Card style={customStyles.dashboardCard}>
-              <Card.Body className="p-3 p-md-4">
-                <h6 className="fw-bold mb-3 mb-md-4">🔔 My Recent Activity</h6>
-                <div className="activity-list">
-                  {dashboardData.myRecentActivity.map((activity) => (
-                    <Alert
-                      key={activity.id}
-                      variant="light"
-                      className="d-flex align-items-start mb-2 border-start border-4 p-2 p-md-3"
-                      style={{
-                        borderLeftColor: `var(--bs-${getActivityColor(activity.type)})`,
-                      }}
-                    >
-                      <span className="me-2 me-md-3 fs-6 fs-md-5 flex-shrink-0">
-                        {getActivityIcon(activity.type)}
-                      </span>
-                      <div className="flex-grow-1 min-w-0">
-                        <div className="fw-medium small text-break">
-                          {activity.action}
-                        </div>
-                        <small className="text-muted">{activity.time}</small>
-                      </div>
-                      <Badge
-                        bg={getActivityColor(activity.type)}
-                        className="ms-2 flex-shrink-0"
-                        style={{ fontSize: "0.7rem" }}
+              <Card.Header className="bg-white border-0 pt-4 px-4 pb-0">
+                <div className="d-flex justify-content-between align-items-center">
+                  <h5 className="fw-bold mb-0">🕒 Recent Tickets</h5>
+                  <Link to="/forum" className="btn btn-outline-primary btn-sm">
+                    View All Tickets
+                  </Link>
+                </div>
+              </Card.Header>
+              <Card.Body className="p-4">
+                {recentTickets.length > 0 ? (
+                  <div>
+                    {recentTickets.slice(0, 8).map((ticket) => (
+                      <div
+                        key={ticket.id}
+                        style={{
+                          ...customStyles.recentTicketCard,
+                          ...(ticket.is_urgent ? customStyles.urgentTicket : {}),
+                        }}
+                        className="p-3"
                       >
-                        {activity.type}
-                      </Badge>
-                    </Alert>
-                  ))}
-                </div>
+                        <Row className="align-items-center">
+                          <Col md={6}>
+                            <div className="d-flex align-items-center">
+                              {ticket.is_urgent && (
+                                <Badge bg="danger" className="me-2 small">
+                                  🚨 URGENT
+                                </Badge>
+                              )}
+                              <div>
+                                <div className="fw-bold">
+                                  <Link
+                                    to={`/ticket/${ticket.id}`}
+                                    className="text-decoration-none text-dark"
+                                  >
+                                    #{ticket.id} {ticket.title}
+                                  </Link>
+                                </div>
+                                <small className="text-muted">
+                                  by {ticket.author.name}
+                                </small>
+                              </div>
+                            </div>
+                          </Col>
+                          <Col md={2}>
+                            <Badge bg={getPriorityColor(ticket.priority)} className="small">
+                              {ticket.priority.toUpperCase()}
+                            </Badge>
+                          </Col>
+                          <Col md={2}>
+                            <Badge bg={getStatusColor(ticket.status)}>
+                              {getStatusText(ticket.status)}
+                            </Badge>
+                          </Col>
+                          <Col md={2} className="text-end">
+                            <small className="text-muted">
+                              {formatDate(ticket.updated_at)}
+                            </small>
+                          </Col>
+                        </Row>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-5">
+                    <h6 className="text-muted">No recent tickets</h6>
+                    <p className="text-muted">Create your first ticket to get started!</p>
+                    <Link to="/create-ticket" className="btn btn-primary">
+                      Create Ticket
+                    </Link>
+                  </div>
+                )}
               </Card.Body>
             </Card>
           </Col>
 
-          {/* My Personal Stats */}
-          <Col xs={12} xl={4}>
-            <Card style={customStyles.dashboardCard}>
-              <Card.Body className="p-3 p-md-4">
-                <h6 className="fw-bold mb-3 mb-md-4">📈 My Performance</h6>
-
-                <div className="mb-3 mb-md-4">
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="small">Questions Answered</span>
-                    <span className="fw-bold small">
-                      {Math.round(
-                        (dashboardData.myTicketsResolved /
-                          (dashboardData.myTicketsResolved +
-                            dashboardData.myTicketsOpen)) *
-                          100,
-                      )}
-                      %
-                    </span>
-                  </div>
-                  <ProgressBar
-                    variant="success"
-                    now={Math.round(
-                      (dashboardData.myTicketsResolved /
-                        (dashboardData.myTicketsResolved +
-                          dashboardData.myTicketsOpen)) *
-                        100,
-                    )}
-                    style={{ height: "8px" }}
-                  />
-                </div>
-
-                <div className="mb-3 mb-md-4">
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="small">Helpful Votes</span>
-                    <span className="fw-bold small">
-                      {dashboardData.helpfulVotes}
-                    </span>
-                  </div>
-                  <ProgressBar
-                    variant="info"
-                    now={
-                      (dashboardData.helpfulVotes /
-                        dashboardData.myRepliesGiven) *
-                      10
-                    }
-                    style={{ height: "8px" }}
-                  />
-                </div>
-
-                <div className="mb-3 mb-md-4">
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="small">Reputation Points</span>
-                    <span className="fw-bold small">
-                      {dashboardData.reputation}
-                    </span>
-                  </div>
-                  <ProgressBar
-                    variant="warning"
-                    now={(dashboardData.reputation / 500) * 100}
-                    style={{ height: "8px" }}
-                  />
-                </div>
-
+          {/* Quick Actions & Links */}
+          <Col lg={4}>
+            <Card style={customStyles.dashboardCard} className="mb-4">
+              <Card.Header className="bg-primary text-white">
+                <h6 className="mb-0 fw-bold">⚡ Quick Actions</h6>
+              </Card.Header>
+              <Card.Body className="p-3">
                 <div className="d-grid gap-2">
-                  <Link
-                    to="/forum"
-                    className="btn btn-outline-primary btn-sm"
-                    style={customStyles.customButton}
-                  >
-                    View My Questions
+                  <Link to="/create-ticket" className="btn btn-primary">
+                    ➕ Create New Ticket
                   </Link>
-                  <Link
-                    to="/tickets"
-                    className="btn btn-outline-secondary btn-sm"
-                    style={customStyles.customButton}
-                  >
-                    My Tickets
+                  <Link to="/forum" className="btn btn-outline-primary">
+                    🔍 Browse All Tickets
                   </Link>
+                  {(userRole === "Support Agent" || userRole === "Admin") && (
+                    <Link to="/staff/dashboard" className="btn btn-outline-warning">
+                      🛠️ Staff Dashboard
+                    </Link>
+                  )}
+                  {userRole === "Admin" && (
+                    <Link to="/admin/dashboard" className="btn btn-outline-danger">
+                      🛡️ Admin Panel
+                    </Link>
+                  )}
+                </div>
+              </Card.Body>
+            </Card>
+
+            {/* Status Distribution */}
+            <Card style={customStyles.dashboardCard}>
+              <Card.Header className="bg-light">
+                <h6 className="mb-0 fw-bold">📊 Ticket Status</h6>
+              </Card.Header>
+              <Card.Body className="p-3">
+                <div className="small">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <span>🟢 Open</span>
+                    <Badge bg="success">{stats.openTickets}</Badge>
+                  </div>
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <span>🔄 In Progress</span>
+                    <Badge bg="warning">{stats.inProgressTickets}</Badge>
+                  </div>
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <span>✅ Resolved</span>
+                    <Badge bg="success">{stats.resolvedTickets}</Badge>
+                  </div>
+                  <div className="d-flex justify-content-between align-items-center">
+                    <span>🔒 Closed</span>
+                    <Badge bg="secondary">{stats.closedTickets}</Badge>
+                  </div>
                 </div>
               </Card.Body>
             </Card>

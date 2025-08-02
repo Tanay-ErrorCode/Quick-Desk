@@ -187,13 +187,62 @@ function AdminCategoryManagementPage() {
       ];
 
       const sampleTags: Tag[] = [
-        { id: 1, name: "urgent", category: "Technical", color: "#dc3545", usageCount: 23, status: "Active" },
-        { id: 2, name: "bug-fix", category: "Development", color: "#fd7e14", usageCount: 18, status: "Active" },
-        { id: 3, name: "sql-query", category: "Database", color: "#0dcaf0", usageCount: 15, status: "Active" },
-        { id: 4, name: "docker", category: "DevOps", color: "#198754", usageCount: 12, status: "Active" },
-        { id: 5, name: "mobile", category: "UI/UX", color: "#e83e8c", usageCount: 9, status: "Active" },
-        { id: 6, name: "authentication", category: "Security", color: "#6f42c1", usageCount: 7, status: "Active" },
-        { id: 7, name: "deprecated", category: "Legacy", color: "#6c757d", usageCount: 0, status: "Inactive" },
+        {
+          id: 1,
+          name: "urgent",
+          category: "Technical",
+          color: "#dc3545",
+          usageCount: 23,
+          status: "Active",
+        },
+        {
+          id: 2,
+          name: "bug-fix",
+          category: "Development",
+          color: "#fd7e14",
+          usageCount: 18,
+          status: "Active",
+        },
+        {
+          id: 3,
+          name: "sql-query",
+          category: "Database",
+          color: "#0dcaf0",
+          usageCount: 15,
+          status: "Active",
+        },
+        {
+          id: 4,
+          name: "docker",
+          category: "DevOps",
+          color: "#198754",
+          usageCount: 12,
+          status: "Active",
+        },
+        {
+          id: 5,
+          name: "mobile",
+          category: "UI/UX",
+          color: "#e83e8c",
+          usageCount: 9,
+          status: "Active",
+        },
+        {
+          id: 6,
+          name: "authentication",
+          category: "Security",
+          color: "#6f42c1",
+          usageCount: 7,
+          status: "Active",
+        },
+        {
+          id: 7,
+          name: "deprecated",
+          category: "Legacy",
+          color: "#6c757d",
+          usageCount: 0,
+          status: "Inactive",
+        },
       ];
 
       setCategories(sampleCategories);
@@ -209,12 +258,14 @@ function AdminCategoryManagementPage() {
       filtered = filtered.filter(
         (category) =>
           category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          category.description.toLowerCase().includes(searchTerm.toLowerCase())
+          category.description.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
     if (statusFilter !== "All") {
-      filtered = filtered.filter((category) => category.status === statusFilter);
+      filtered = filtered.filter(
+        (category) => category.status === statusFilter,
+      );
     }
 
     setFilteredCategories(filtered);
@@ -230,20 +281,25 @@ function AdminCategoryManagementPage() {
     }
 
     const newCategory: Category = {
-      id: Math.max(...categories.map(c => c.id)) + 1,
+      id: Math.max(...categories.map((c) => c.id)) + 1,
       name: categoryForm.name,
       description: categoryForm.description,
       color: categoryForm.color,
       icon: categoryForm.icon,
       ticketCount: 0,
       status: "Active",
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString().split("T")[0],
+      updatedAt: new Date().toISOString().split("T")[0],
     };
 
-    setCategories(prev => [...prev, newCategory]);
+    setCategories((prev) => [...prev, newCategory]);
     setShowCategoryModal(false);
-    setCategoryForm({ name: "", description: "", color: "#007bff", icon: "📂" });
+    setCategoryForm({
+      name: "",
+      description: "",
+      color: "#007bff",
+      icon: "📂",
+    });
     setAlertMessage("Category created successfully!");
     setAlertType("success");
     setShowAlert(true);
@@ -264,8 +320,8 @@ function AdminCategoryManagementPage() {
   const handleUpdateCategory = () => {
     if (!editingCategory) return;
 
-    setCategories(prev =>
-      prev.map(cat =>
+    setCategories((prev) =>
+      prev.map((cat) =>
         cat.id === editingCategory.id
           ? {
               ...cat,
@@ -273,15 +329,20 @@ function AdminCategoryManagementPage() {
               description: categoryForm.description,
               color: categoryForm.color,
               icon: categoryForm.icon,
-              updatedAt: new Date().toISOString().split('T')[0],
+              updatedAt: new Date().toISOString().split("T")[0],
             }
-          : cat
-      )
+          : cat,
+      ),
     );
 
     setShowCategoryModal(false);
     setEditingCategory(null);
-    setCategoryForm({ name: "", description: "", color: "#007bff", icon: "📂" });
+    setCategoryForm({
+      name: "",
+      description: "",
+      color: "#007bff",
+      icon: "📂",
+    });
     setAlertMessage("Category updated successfully!");
     setAlertType("success");
     setShowAlert(true);
@@ -289,16 +350,16 @@ function AdminCategoryManagementPage() {
   };
 
   const handleToggleStatus = (categoryId: number) => {
-    setCategories(prev =>
-      prev.map(cat =>
+    setCategories((prev) =>
+      prev.map((cat) =>
         cat.id === categoryId
           ? {
               ...cat,
               status: cat.status === "Active" ? "Inactive" : "Active",
-              updatedAt: new Date().toISOString().split('T')[0],
+              updatedAt: new Date().toISOString().split("T")[0],
             }
-          : cat
-      )
+          : cat,
+      ),
     );
 
     setAlertMessage("Category status updated successfully!");
@@ -308,7 +369,7 @@ function AdminCategoryManagementPage() {
   };
 
   const handleDeleteCategory = (categoryId: number) => {
-    const category = categories.find(c => c.id === categoryId);
+    const category = categories.find((c) => c.id === categoryId);
     if (category && category.ticketCount > 0) {
       setAlertMessage("Cannot delete category with existing tickets!");
       setAlertType("danger");
@@ -318,7 +379,7 @@ function AdminCategoryManagementPage() {
     }
 
     if (window.confirm("Are you sure you want to delete this category?")) {
-      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+      setCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
       setAlertMessage("Category deleted successfully!");
       setAlertType("success");
       setShowAlert(true);
@@ -326,7 +387,20 @@ function AdminCategoryManagementPage() {
     }
   };
 
-  const iconOptions = ["📂", "🔧", "💻", "🗄️", "⚙️", "🎨", "🔒", "📊", "🌐", "📱", "🚀", "💡"];
+  const iconOptions = [
+    "📂",
+    "🔧",
+    "💻",
+    "🗄️",
+    "⚙️",
+    "🎨",
+    "🔒",
+    "📊",
+    "🌐",
+    "📱",
+    "🚀",
+    "💡",
+  ];
 
   if (!isLoggedIn || userRole !== "Admin") {
     return (
@@ -361,7 +435,9 @@ function AdminCategoryManagementPage() {
           <Col xs={12}>
             <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
               <div className="flex-grow-1">
-                <h2 className="fw-bold text-dark mb-1">📂 Category & Tag Management</h2>
+                <h2 className="fw-bold text-dark mb-1">
+                  📂 Category & Tag Management
+                </h2>
                 <p className="text-muted mb-0">
                   Manage ticket categories and tags for better organization
                 </p>
@@ -378,7 +454,12 @@ function AdminCategoryManagementPage() {
                   variant="primary"
                   onClick={() => {
                     setEditingCategory(null);
-                    setCategoryForm({ name: "", description: "", color: "#007bff", icon: "📂" });
+                    setCategoryForm({
+                      name: "",
+                      description: "",
+                      color: "#007bff",
+                      icon: "📂",
+                    });
                     setShowCategoryModal(true);
                   }}
                   style={customStyles.customButton}
@@ -404,18 +485,23 @@ function AdminCategoryManagementPage() {
               <Card.Header className="bg-white">
                 <div className="d-flex gap-3">
                   <Button
-                    variant={activeTab === "categories" ? "primary" : "outline-primary"}
+                    variant={
+                      activeTab === "categories" ? "primary" : "outline-primary"
+                    }
                     onClick={() => setActiveTab("categories")}
                     size="sm"
                   >
-                    📂 Categories ({categories.filter(c => c.status === "Active").length})
+                    📂 Categories (
+                    {categories.filter((c) => c.status === "Active").length})
                   </Button>
                   <Button
-                    variant={activeTab === "tags" ? "primary" : "outline-primary"}
+                    variant={
+                      activeTab === "tags" ? "primary" : "outline-primary"
+                    }
                     onClick={() => setActiveTab("tags")}
                     size="sm"
                   >
-                    🏷️ Tags ({tags.filter(t => t.status === "Active").length})
+                    🏷️ Tags ({tags.filter((t) => t.status === "Active").length})
                   </Button>
                 </div>
               </Card.Header>
@@ -432,7 +518,9 @@ function AdminCategoryManagementPage() {
                   <Card.Body className="p-3">
                     <Row className="g-3 align-items-end">
                       <Col lg={4} md={6}>
-                        <Form.Label className="small fw-bold">Search Categories</Form.Label>
+                        <Form.Label className="small fw-bold">
+                          Search Categories
+                        </Form.Label>
                         <InputGroup>
                           <Form.Control
                             type="text"
@@ -444,7 +532,9 @@ function AdminCategoryManagementPage() {
                         </InputGroup>
                       </Col>
                       <Col lg={2} md={3}>
-                        <Form.Label className="small fw-bold">Status</Form.Label>
+                        <Form.Label className="small fw-bold">
+                          Status
+                        </Form.Label>
                         <Form.Select
                           value={statusFilter}
                           onChange={(e) => setStatusFilter(e.target.value)}
@@ -481,49 +571,67 @@ function AdminCategoryManagementPage() {
             <Row className="g-4">
               {filteredCategories.map((category) => (
                 <Col key={category.id} lg={4} md={6}>
-                  <Card 
+                  <Card
                     style={customStyles.categoryCard}
-                    className={`h-100 ${category.status === 'Inactive' ? 'opacity-75' : ''}`}
+                    className={`h-100 ${category.status === "Inactive" ? "opacity-75" : ""}`}
                   >
                     <Card.Body className="p-4">
                       <div className="d-flex align-items-start justify-content-between mb-3">
                         <div className="d-flex align-items-center">
-                          <div 
+                          <div
                             className="rounded-circle d-flex align-items-center justify-content-center me-3"
-                            style={{ 
-                              width: '50px', 
-                              height: '50px', 
-                              backgroundColor: category.color + '20',
+                            style={{
+                              width: "50px",
+                              height: "50px",
+                              backgroundColor: category.color + "20",
                               color: category.color,
-                              fontSize: '1.5rem'
+                              fontSize: "1.5rem",
                             }}
                           >
                             {category.icon}
                           </div>
                           <div>
                             <h6 className="fw-bold mb-1">{category.name}</h6>
-                            <Badge bg={category.status === 'Active' ? 'success' : 'secondary'}>
+                            <Badge
+                              bg={
+                                category.status === "Active"
+                                  ? "success"
+                                  : "secondary"
+                              }
+                            >
                               {category.status}
                             </Badge>
                           </div>
                         </div>
-                        
+
                         <Dropdown>
-                          <Dropdown.Toggle variant="outline-secondary" size="sm" style={{ border: "none" }}>
+                          <Dropdown.Toggle
+                            variant="outline-secondary"
+                            size="sm"
+                            style={{ border: "none" }}
+                          >
                             ⋮
                           </Dropdown.Toggle>
                           <Dropdown.Menu>
-                            <Dropdown.Item onClick={() => handleEditCategory(category)}>
+                            <Dropdown.Item
+                              onClick={() => handleEditCategory(category)}
+                            >
                               ✏️ Edit Category
                             </Dropdown.Item>
-                            <Dropdown.Item 
+                            <Dropdown.Item
                               onClick={() => handleToggleStatus(category.id)}
-                              className={category.status === "Active" ? "text-warning" : "text-success"}
+                              className={
+                                category.status === "Active"
+                                  ? "text-warning"
+                                  : "text-success"
+                              }
                             >
-                              {category.status === "Active" ? "🚫 Deactivate" : "✅ Activate"}
+                              {category.status === "Active"
+                                ? "🚫 Deactivate"
+                                : "✅ Activate"}
                             </Dropdown.Item>
                             <Dropdown.Divider />
-                            <Dropdown.Item 
+                            <Dropdown.Item
                               onClick={() => handleDeleteCategory(category.id)}
                               className="text-danger"
                               disabled={category.ticketCount > 0}
@@ -534,16 +642,22 @@ function AdminCategoryManagementPage() {
                         </Dropdown>
                       </div>
 
-                      <p className="text-muted small mb-3">{category.description}</p>
+                      <p className="text-muted small mb-3">
+                        {category.description}
+                      </p>
 
                       <div className="d-flex justify-content-between align-items-center">
                         <div>
-                          <div className="fw-bold text-dark">{category.ticketCount}</div>
+                          <div className="fw-bold text-dark">
+                            {category.ticketCount}
+                          </div>
                           <small className="text-muted">Tickets</small>
                         </div>
                         <div className="text-end">
                           <div className="small text-muted">Updated</div>
-                          <small className="text-muted">{category.updatedAt}</small>
+                          <small className="text-muted">
+                            {category.updatedAt}
+                          </small>
                         </div>
                       </div>
                     </Card.Body>
@@ -557,7 +671,9 @@ function AdminCategoryManagementPage() {
                 <Col xs={12}>
                   <div className="text-center py-5">
                     <h5 className="text-muted">No categories found</h5>
-                    <p className="text-muted">Try adjusting your search or filter criteria</p>
+                    <p className="text-muted">
+                      Try adjusting your search or filter criteria
+                    </p>
                   </div>
                 </Col>
               </Row>
@@ -572,11 +688,15 @@ function AdminCategoryManagementPage() {
                 <Card.Body className="p-4">
                   <div className="d-flex justify-content-between align-items-center mb-4">
                     <h6 className="fw-bold mb-0">🏷️ Tags Management</h6>
-                    <Button variant="outline-primary" size="sm" onClick={() => setShowTagModal(true)}>
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => setShowTagModal(true)}
+                    >
                       ➕ Add Tag
                     </Button>
                   </div>
-                  
+
                   <div className="table-responsive">
                     <Table className="mb-0">
                       <thead className="bg-light">
@@ -592,8 +712,11 @@ function AdminCategoryManagementPage() {
                         {tags.map((tag) => (
                           <tr key={tag.id}>
                             <td className="py-3">
-                              <Badge 
-                                style={{ backgroundColor: tag.color, color: 'white' }}
+                              <Badge
+                                style={{
+                                  backgroundColor: tag.color,
+                                  color: "white",
+                                }}
                                 className="px-3 py-2"
                               >
                                 {tag.name}
@@ -602,22 +725,36 @@ function AdminCategoryManagementPage() {
                             <td className="py-3">{tag.category}</td>
                             <td className="py-3">{tag.usageCount} tickets</td>
                             <td className="py-3">
-                              <Badge bg={tag.status === 'Active' ? 'success' : 'secondary'}>
+                              <Badge
+                                bg={
+                                  tag.status === "Active"
+                                    ? "success"
+                                    : "secondary"
+                                }
+                              >
                                 {tag.status}
                               </Badge>
                             </td>
                             <td className="py-3 text-center">
                               <Dropdown>
-                                <Dropdown.Toggle variant="outline-secondary" size="sm" style={{ border: "none" }}>
+                                <Dropdown.Toggle
+                                  variant="outline-secondary"
+                                  size="sm"
+                                  style={{ border: "none" }}
+                                >
                                   ⋮
                                 </Dropdown.Toggle>
                                 <Dropdown.Menu>
                                   <Dropdown.Item>✏️ Edit Tag</Dropdown.Item>
                                   <Dropdown.Item className="text-warning">
-                                    {tag.status === "Active" ? "🚫 Deactivate" : "✅ Activate"}
+                                    {tag.status === "Active"
+                                      ? "🚫 Deactivate"
+                                      : "✅ Activate"}
                                   </Dropdown.Item>
                                   <Dropdown.Divider />
-                                  <Dropdown.Item className="text-danger">🗑️ Delete</Dropdown.Item>
+                                  <Dropdown.Item className="text-danger">
+                                    🗑️ Delete
+                                  </Dropdown.Item>
                                 </Dropdown.Menu>
                               </Dropdown>
                             </td>
@@ -634,7 +771,11 @@ function AdminCategoryManagementPage() {
       </Container>
 
       {/* Category Modal */}
-      <Modal show={showCategoryModal} onHide={() => setShowCategoryModal(false)} size="lg">
+      <Modal
+        show={showCategoryModal}
+        onHide={() => setShowCategoryModal(false)}
+        size="lg"
+      >
         <Modal.Header closeButton>
           <Modal.Title>
             {editingCategory ? "✏️ Edit Category" : "➕ Add New Category"}
@@ -649,7 +790,9 @@ function AdminCategoryManagementPage() {
                   <Form.Control
                     type="text"
                     value={categoryForm.name}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                    onChange={(e) =>
+                      setCategoryForm({ ...categoryForm, name: e.target.value })
+                    }
                     placeholder="Enter category name"
                   />
                 </Form.Group>
@@ -659,7 +802,9 @@ function AdminCategoryManagementPage() {
                   <Form.Label>Icon</Form.Label>
                   <Form.Select
                     value={categoryForm.icon}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value })}
+                    onChange={(e) =>
+                      setCategoryForm({ ...categoryForm, icon: e.target.value })
+                    }
                   >
                     {iconOptions.map((icon) => (
                       <option key={icon} value={icon}>
@@ -670,14 +815,19 @@ function AdminCategoryManagementPage() {
                 </Form.Group>
               </Col>
             </Row>
-            
+
             <Form.Group className="mb-3">
               <Form.Label>Description *</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={3}
                 value={categoryForm.description}
-                onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                onChange={(e) =>
+                  setCategoryForm({
+                    ...categoryForm,
+                    description: e.target.value,
+                  })
+                }
                 placeholder="Enter category description"
               />
             </Form.Group>
@@ -688,13 +838,17 @@ function AdminCategoryManagementPage() {
                 <Form.Control
                   type="color"
                   value={categoryForm.color}
-                  onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
-                  style={{ width: '60px' }}
+                  onChange={(e) =>
+                    setCategoryForm({ ...categoryForm, color: e.target.value })
+                  }
+                  style={{ width: "60px" }}
                 />
                 <Form.Control
                   type="text"
                   value={categoryForm.color}
-                  onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
+                  onChange={(e) =>
+                    setCategoryForm({ ...categoryForm, color: e.target.value })
+                  }
                   placeholder="#007bff"
                 />
               </div>
@@ -703,33 +857,42 @@ function AdminCategoryManagementPage() {
             <div className="p-3 bg-light rounded">
               <h6 className="mb-2">Preview:</h6>
               <div className="d-flex align-items-center">
-                <div 
+                <div
                   className="rounded-circle d-flex align-items-center justify-content-center me-3"
-                  style={{ 
-                    width: '40px', 
-                    height: '40px', 
-                    backgroundColor: categoryForm.color + '20',
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    backgroundColor: categoryForm.color + "20",
                     color: categoryForm.color,
-                    fontSize: '1.2rem'
+                    fontSize: "1.2rem",
                   }}
                 >
                   {categoryForm.icon}
                 </div>
                 <div>
-                  <div className="fw-bold">{categoryForm.name || "Category Name"}</div>
-                  <small className="text-muted">{categoryForm.description || "Category description"}</small>
+                  <div className="fw-bold">
+                    {categoryForm.name || "Category Name"}
+                  </div>
+                  <small className="text-muted">
+                    {categoryForm.description || "Category description"}
+                  </small>
                 </div>
               </div>
             </div>
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowCategoryModal(false)}>
+          <Button
+            variant="secondary"
+            onClick={() => setShowCategoryModal(false)}
+          >
             Cancel
           </Button>
-          <Button 
-            variant="primary" 
-            onClick={editingCategory ? handleUpdateCategory : handleCreateCategory}
+          <Button
+            variant="primary"
+            onClick={
+              editingCategory ? handleUpdateCategory : handleCreateCategory
+            }
           >
             {editingCategory ? "Update Category" : "Create Category"}
           </Button>
@@ -748,23 +911,29 @@ function AdminCategoryManagementPage() {
               <Form.Control
                 type="text"
                 value={tagForm.name}
-                onChange={(e) => setTagForm({ ...tagForm, name: e.target.value })}
+                onChange={(e) =>
+                  setTagForm({ ...tagForm, name: e.target.value })
+                }
                 placeholder="Enter tag name"
               />
             </Form.Group>
-            
+
             <Form.Group className="mb-3">
               <Form.Label>Category *</Form.Label>
               <Form.Select
                 value={tagForm.category}
-                onChange={(e) => setTagForm({ ...tagForm, category: e.target.value })}
+                onChange={(e) =>
+                  setTagForm({ ...tagForm, category: e.target.value })
+                }
               >
                 <option value="">Select category...</option>
-                {categories.filter(c => c.status === "Active").map((category) => (
-                  <option key={category.id} value={category.name}>
-                    {category.icon} {category.name}
-                  </option>
-                ))}
+                {categories
+                  .filter((c) => c.status === "Active")
+                  .map((category) => (
+                    <option key={category.id} value={category.name}>
+                      {category.icon} {category.name}
+                    </option>
+                  ))}
               </Form.Select>
             </Form.Group>
 
@@ -773,7 +942,9 @@ function AdminCategoryManagementPage() {
               <Form.Control
                 type="color"
                 value={tagForm.color}
-                onChange={(e) => setTagForm({ ...tagForm, color: e.target.value })}
+                onChange={(e) =>
+                  setTagForm({ ...tagForm, color: e.target.value })
+                }
               />
             </Form.Group>
           </Form>
@@ -782,9 +953,7 @@ function AdminCategoryManagementPage() {
           <Button variant="secondary" onClick={() => setShowTagModal(false)}>
             Cancel
           </Button>
-          <Button variant="primary">
-            Create Tag
-          </Button>
+          <Button variant="primary">Create Tag</Button>
         </Modal.Footer>
       </Modal>
     </>

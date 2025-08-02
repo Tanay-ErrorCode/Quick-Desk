@@ -4,37 +4,12 @@ import {
   Navbar,
   Nav,
   Container,
-  Button,
-  Dropdown,
+  NavDropdown,
   Badge,
+  Dropdown,
+  Button,
 } from "react-bootstrap";
-
-const customStyles = {
-  headerGradient: {
-    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-  },
-  notificationDropdown: {
-    minWidth: "300px",
-    maxHeight: "400px",
-    overflowY: "auto" as const,
-  },
-  notificationItem: {
-    borderBottom: "1px solid #e9ecef",
-    padding: "12px 16px",
-    transition: "background-color 0.3s ease",
-    cursor: "pointer",
-  },
-  notificationBell: {
-    fontSize: "1.3rem",
-    color: "white",
-    background: "none",
-    border: "none",
-    position: "relative" as const,
-    padding: "8px",
-    borderRadius: "50%",
-    transition: "background-color 0.3s ease",
-  },
-};
+import { apiService } from "../services/api";
 
 interface Notification {
   id: number;
@@ -42,42 +17,13 @@ interface Notification {
   message: string;
   time: string;
   read: boolean;
-  type: "upgrade" | "ticket" | "system";
+  type: string;
 }
-
-// Custom Bell Icon Component
-const BellIcon = ({
-  filled = false,
-  size = 20,
-}: {
-  filled?: boolean;
-  size?: number;
-}) => {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill={filled ? "currentColor" : "none"}
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-      {filled && (
-        <path
-          d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"
-          fill="currentColor"
-        />
-      )}
-    </svg>
-  );
-};
 
 function Navigation() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState("End User");
+  const [userName, setUserName] = useState("User");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
@@ -85,109 +31,120 @@ function Navigation() {
   useEffect(() => {
     // Check login status
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
+    const role = localStorage.getItem("userRole") || "End User";
+    const name = localStorage.getItem("userName") || "User";
+    
     setIsLoggedIn(loggedIn);
+    setUserRole(role);
+    setUserName(name);
 
     if (loggedIn) {
-      // Load sample notifications
-      const sampleNotifications: Notification[] = [
-        {
-          id: 1,
-          title: "Welcome to QuickDesk!",
-          message:
-            "Your account has been created successfully. Start by creating your first ticket.",
-          time: "2 hours ago",
-          read: false,
-          type: "system",
-        },
-        {
-          id: 2,
-          title: "New Reply on Your Ticket",
-          message:
-            "Someone replied to your question about React vs Vue.js comparison.",
-          time: "1 day ago",
-          read: false,
-          type: "ticket",
-        },
-        {
-          id: 3,
-          title: "Upgrade Request Update",
-          message: "Your upgrade request is being reviewed by the admin team.",
-          time: "2 days ago",
-          read: true,
-          type: "upgrade",
-        },
-        {
-          id: 4,
-          title: "System Maintenance",
-          message:
-            "Scheduled maintenance will occur tonight from 2:00 AM to 4:00 AM.",
-          time: "3 days ago",
-          read: true,
-          type: "system",
-        },
-      ];
-
-      setNotifications(sampleNotifications);
-      setUnreadCount(sampleNotifications.filter((n) => !n.read).length);
+      loadNotifications();
     }
 
-    // Listen for storage changes (when user logs in/out in another tab)
-    const handleStorageChange = () => {
+    // Listen for auth state changes
+    const handleAuthStateChange = () => {
       const loggedIn = localStorage.getItem("isLoggedIn") === "true";
+      const role = localStorage.getItem("userRole") || "End User";
+      const name = localStorage.getItem("userName") || "User";
       setIsLoggedIn(loggedIn);
+      setUserRole(role);
+      setUserName(name);
+
+      if (loggedIn) {
+        loadNotifications();
+      } else {
+        setNotifications([]);
+        setUnreadCount(0);
+      }
     };
 
-    window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("authStateChanged", handleStorageChange);
+    window.addEventListener("storage", handleAuthStateChange);
+    window.addEventListener("authStateChanged", handleAuthStateChange);
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("authStateChanged", handleStorageChange);
+      window.removeEventListener("storage", handleAuthStateChange);
+      window.removeEventListener("authStateChanged", handleAuthStateChange);
     };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userName");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userCategories");
-    localStorage.removeItem("userLanguage");
-    localStorage.removeItem("upgradeRequestPending");
+  const loadNotifications = () => {
+    // Sample notifications - replace with API call later
+    const sampleNotifications: Notification[] = [
+      {
+        id: 1,
+        title: "Welcome to QuickDesk!",
+        message:
+          "Your account has been created successfully. Start by creating your first ticket.",
+        time: "2 hours ago",
+        read: false,
+        type: "system",
+      },
+      {
+        id: 2,
+        title: "New Reply on Your Ticket",
+        message:
+          "Someone replied to your question about React vs Vue.js comparison.",
+        time: "1 day ago",
+        read: false,
+        type: "ticket",
+      },
+      {
+        id: 3,
+        title: "Upgrade Request Update",
+        message: "Your upgrade request is being reviewed by the admin team.",
+        time: "2 days ago",
+        read: true,
+        type: "upgrade",
+      },
+    ];
 
-    setIsLoggedIn(false);
-    setNotifications([]);
-    setUnreadCount(0);
+    setNotifications(sampleNotifications);
+    setUnreadCount(sampleNotifications.filter((n) => !n.read).length);
+  };
 
-    // Dispatch custom event to update other components
-    window.dispatchEvent(new Event("authStateChanged"));
+  const handleLogout = async () => {
+    try {
+      await apiService.logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      // Clear all authentication data
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userEmail");
+      localStorage.removeItem("userName");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("userPhone");
+      localStorage.removeItem("userDepartment");
+      localStorage.removeItem("upgradeRequestPending");
+      localStorage.removeItem("userCategories");
+      localStorage.removeItem("userLanguage");
 
-    // Redirect to home page
-    navigate("/");
+      // Dispatch custom event
+      window.dispatchEvent(new Event('authStateChanged'));
+
+      // Redirect to home
+      navigate("/");
+    }
   };
 
   const markAsRead = (notificationId: number) => {
     setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === notificationId
-          ? { ...notification, read: true }
-          : notification,
+      prev.map((notif) =>
+        notif.id === notificationId ? { ...notif, read: true } : notif,
       ),
     );
     setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    setUnreadCount(0);
-  };
-
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case "upgrade":
-        return "⬆️";
       case "ticket":
         return "🎫";
+      case "upgrade":
+        return "⬆️";
       case "system":
         return "⚙️";
       default:
@@ -195,188 +152,192 @@ function Navigation() {
     }
   };
 
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case "Admin":
+        return "danger";
+      case "Support Agent":
+        return "warning";
+      case "End User":
+        return "primary";
+      default:
+        return "secondary";
+    }
+  };
+
   return (
-    <Navbar
-      expand="lg"
-      sticky="top"
-      className="shadow-sm"
-      style={customStyles.headerGradient}
-    >
+    <Navbar bg="white" expand="lg" className="border-bottom shadow-sm">
       <Container>
-        <Navbar.Brand as={Link} to="/" className="text-white fw-bold fs-3">
-          🎧 QuickDesk
+        <Navbar.Brand as={Link} to="/" className="fw-bold text-primary">
+          QuickDesk
         </Navbar.Brand>
+
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="ms-auto align-items-center">
-            <Nav.Link as={Link} to="/" className="text-white mx-2">
+          <Nav className="me-auto">
+            <Nav.Link as={Link} to="/">
               Home
             </Nav.Link>
-
-            {isLoggedIn ? (
+            {isLoggedIn && (
               <>
-                <Nav.Link as={Link} to="/forum" className="text-white mx-2">
+                <Nav.Link as={Link} to="/forum">
                   Forum
                 </Nav.Link>
-                <Nav.Link as={Link} to="/tickets" className="text-white mx-2">
-                  My Tickets
-                </Nav.Link>
-                <Nav.Link
-                  as={Link}
-                  to="/create-ticket"
-                  className="text-white mx-2"
-                >
+                <Nav.Link as={Link} to="/create-ticket">
                   Create Ticket
                 </Nav.Link>
-                <Nav.Link as={Link} to="/dashboard" className="text-white mx-2">
+                <Nav.Link as={Link} to="/dashboard">
                   Dashboard
                 </Nav.Link>
-                <Nav.Link as={Link} to="/profile" className="text-white mx-2">
-                  Profile
-                </Nav.Link>
+              </>
+            )}
+          </Nav>
 
-                {/* Notification Bell - Always visible when logged in */}
-                <Dropdown align="end" className="mx-2">
+          <Nav className="align-items-center">
+            {isLoggedIn ? (
+              <>
+                {/* Notifications */}
+                <Dropdown align="end" className="me-3">
                   <Dropdown.Toggle
-                    as="button"
-                    style={customStyles.notificationBell}
-                    className="position-relative d-flex align-items-center justify-content-center"
+                    variant="outline-primary"
+                    className="position-relative border-0"
+                    style={{ background: "transparent" }}
                   >
-                    <BellIcon filled={unreadCount > 0} size={20} />
+                    🔔
                     {unreadCount > 0 && (
                       <Badge
                         bg="danger"
                         pill
-                        className="position-absolute"
-                        style={{
-                          fontSize: "0.6rem",
-                          top: "2px",
-                          right: "10px",
-                          minWidth: "18px",
-                          height: "18px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
+                        className="position-absolute top-0 start-100 translate-middle"
+                        style={{ fontSize: "0.7rem" }}
                       >
-                        {unreadCount > 99 ? "99+" : unreadCount}
+                        {unreadCount}
                       </Badge>
                     )}
                   </Dropdown.Toggle>
 
-                  <Dropdown.Menu style={customStyles.notificationDropdown}>
-                    <div className="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
-                      <h6 className="mb-0 fw-bold">Notifications</h6>
-                      {unreadCount > 0 && (
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="p-0 text-decoration-none"
-                          onClick={markAllAsRead}
-                        >
-                          Mark all read
-                        </Button>
-                      )}
-                    </div>
-
+                  <Dropdown.Menu style={{ minWidth: "350px", maxHeight: "400px", overflowY: "auto" }}>
+                    <Dropdown.Header className="d-flex justify-content-between align-items-center">
+                      <span>Notifications</span>
+                      <Link 
+                        to="/notifications" 
+                        className="text-decoration-none small"
+                        style={{ fontSize: "0.8rem" }}
+                      >
+                        View All
+                      </Link>
+                    </Dropdown.Header>
+                    <Dropdown.Divider />
+                    
                     {notifications.length === 0 ? (
-                      <div className="text-center py-4 text-muted">
-                        <BellIcon size={24} />
-                        <div className="mt-2">
-                          <small>No notifications yet</small>
-                        </div>
-                      </div>
+                      <Dropdown.ItemText className="text-center text-muted py-3">
+                        No notifications
+                      </Dropdown.ItemText>
                     ) : (
-                      notifications.map((notification) => (
-                        <div
+                      notifications.slice(0, 5).map((notification) => (
+                        <Dropdown.Item
                           key={notification.id}
-                          style={customStyles.notificationItem}
-                          className={`${!notification.read ? "bg-light" : ""}`}
+                          className={`${!notification.read ? 'bg-light' : ''} border-bottom`}
                           onClick={() => markAsRead(notification.id)}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = "#f8f9fa";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              notification.read ? "transparent" : "#f8f9fa";
-                          }}
+                          style={{ whiteSpace: "normal", padding: "10px 15px" }}
                         >
                           <div className="d-flex align-items-start">
-                            <span className="me-2">
+                            <span className="me-2" style={{ fontSize: "1.2rem" }}>
                               {getNotificationIcon(notification.type)}
                             </span>
                             <div className="flex-grow-1">
-                              <div
-                                className="fw-bold text-dark mb-1"
-                                style={{ fontSize: "0.9rem" }}
-                              >
+                              <div className="fw-bold small text-dark">
                                 {notification.title}
                               </div>
-                              <div
-                                className="text-muted mb-1"
-                                style={{ fontSize: "0.8rem" }}
-                              >
+                              <div className="text-muted small mb-1">
                                 {notification.message}
                               </div>
-                              <small className="text-muted">
+                              <div className="text-muted" style={{ fontSize: "0.75rem" }}>
                                 {notification.time}
-                              </small>
-                              {!notification.read && (
-                                <Badge
-                                  bg="primary"
-                                  className="ms-2"
-                                  style={{ fontSize: "0.6rem" }}
-                                >
-                                  New
-                                </Badge>
-                              )}
+                              </div>
                             </div>
+                            {!notification.read && (
+                              <Badge bg="primary" className="ms-2" style={{ fontSize: "0.6rem" }}>
+                                New
+                              </Badge>
+                            )}
                           </div>
-                        </div>
+                        </Dropdown.Item>
                       ))
-                    )}
-
-                    {notifications.length > 0 && (
-                      <div className="text-center py-2 border-top">
-                        <Link
-                          to="/notifications"
-                          className="text-decoration-none small"
-                        >
-                          View all notifications
-                        </Link>
-                      </div>
                     )}
                   </Dropdown.Menu>
                 </Dropdown>
 
-                <Button
-                  variant="outline-light"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="ms-2"
-                  style={{ borderRadius: "20px" }}
+                {/* User Menu */}
+                <NavDropdown
+                  title={
+                    <span>
+                      👤 {userName}{" "}
+                      <Badge bg={getRoleBadgeColor(userRole)} className="ms-1">
+                        {userRole}
+                      </Badge>
+                    </span>
+                  }
+                  id="user-nav-dropdown"
+                  align="end"
                 >
-                  Logout
-                </Button>
+                  <NavDropdown.Item as={Link} to="/profile">
+                    👤 Profile
+                  </NavDropdown.Item>
+                  
+                  {userRole === "Admin" && (
+                    <>
+                      <NavDropdown.Divider />
+                      <NavDropdown.Header>Admin Panel</NavDropdown.Header>
+                      <NavDropdown.Item as={Link} to="/admin/dashboard">
+                        🛡️ Admin Dashboard
+                      </NavDropdown.Item>
+                      <NavDropdown.Item as={Link} to="/admin/users">
+                        👥 User Management
+                      </NavDropdown.Item>
+                      <NavDropdown.Item as={Link} to="/admin/tickets">
+                        🎫 All Tickets
+                      </NavDropdown.Item>
+                      <NavDropdown.Item as={Link} to="/admin/categories">
+                        📂 Categories
+                      </NavDropdown.Item>
+                    </>
+                  )}
+                  
+                  {userRole === "Support Agent" && (
+                    <>
+                      <NavDropdown.Divider />
+                      <NavDropdown.Item as={Link} to="/staff/dashboard">
+                        🛠️ Staff Dashboard
+                      </NavDropdown.Item>
+                    </>
+                  )}
+                  
+                  <NavDropdown.Divider />
+                  <NavDropdown.Item onClick={handleLogout}>
+                    🚪 Logout
+                  </NavDropdown.Item>
+                </NavDropdown>
               </>
             ) : (
               <>
-                <Nav.Link as={Link} to="/login" className="text-white mx-2">
-                  Login
-                </Nav.Link>
-                <Link
-                  to="/register"
-                  className="btn btn-outline-light btn-sm ms-2"
-                  style={{ borderRadius: "20px" }}
+                <Button
+                  as={Link}
+                  to="/login"
+                  variant="outline-primary"
+                  className="me-2"
                 >
+                  Login
+                </Button>
+                <Button as={Link} to="/register" variant="primary">
                   Sign Up
-                </Link>
+                </Button>
               </>
             )}
           </Nav>
         </Navbar.Collapse>
       </Container>
-    </Navbar>
+    </div>
   );
 }
 

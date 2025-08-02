@@ -9,6 +9,7 @@ import {
   Button,
   Alert,
 } from "react-bootstrap";
+import { apiService } from "../services/api";
 
 const customStyles = {
   registerBg: {
@@ -35,10 +36,12 @@ function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
+    phone: "",
+    department: "",
   });
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
-  const [alertType, setAlertType] = useState("danger");
+  const [alertType, setAlertType] = useState<"success" | "danger">("danger");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -58,13 +61,14 @@ function RegisterPage() {
     e.preventDefault();
     setIsLoading(true);
 
+    // Validation
     if (
       !formData.fullName ||
       !formData.email ||
       !formData.password ||
       !formData.confirmPassword
     ) {
-      setAlertMessage("Please fill in all fields");
+      setAlertMessage("Please fill in all required fields");
       setAlertType("danger");
       setShowAlert(true);
       setIsLoading(false);
@@ -90,21 +94,56 @@ function RegisterPage() {
       return;
     }
 
-    setTimeout(() => {
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userEmail", formData.email);
-      localStorage.setItem("userName", formData.fullName);
+    try {
+      const response = await apiService.register({
+        name: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone || undefined,
+        department: formData.department || undefined,
+      });
 
-      setAlertMessage("Account created successfully! Redirecting...");
-      setAlertType("success");
+      if (response.success && response.user && response.token) {
+        // Store authentication data
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("authToken", response.token);
+        localStorage.setItem("userEmail", response.user.email);
+        localStorage.setItem("userName", response.user.name);
+        localStorage.setItem("userRole", response.user.role);
+        localStorage.setItem("userId", response.user.id);
+
+        // Store additional user data if available
+        if (response.user.phone) {
+          localStorage.setItem("userPhone", response.user.phone);
+        }
+        if (response.user.department) {
+          localStorage.setItem("userDepartment", response.user.department);
+        }
+
+        // Dispatch custom event for navigation component
+        window.dispatchEvent(new Event('authStateChanged'));
+
+        setAlertMessage("Account created successfully! Redirecting...");
+        setAlertType("success");
+        setShowAlert(true);
+
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1500);
+      } else {
+        setAlertMessage(response.message || "Registration failed. Please try again.");
+        setAlertType("danger");
+        setShowAlert(true);
+        setTimeout(() => setShowAlert(false), 3000);
+      }
+    } catch (error) {
+      setAlertMessage(error instanceof Error ? error.message : "Network error. Please check your connection.");
+      setAlertType("danger");
       setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+    }
 
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1500);
-
-      setIsLoading(false);
-    }, 1000);
+    setIsLoading(false);
   };
 
   return (
@@ -131,7 +170,7 @@ function RegisterPage() {
 
                 <Form onSubmit={handleSubmit}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Full Name</Form.Label>
+                    <Form.Label>Full Name *</Form.Label>
                     <Form.Control
                       type="text"
                       name="fullName"
@@ -140,11 +179,12 @@ function RegisterPage() {
                       onChange={handleInputChange}
                       size="lg"
                       style={{ borderRadius: "10px" }}
+                      required
                     />
                   </Form.Group>
 
                   <Form.Group className="mb-3">
-                    <Form.Label>Email Address</Form.Label>
+                    <Form.Label>Email Address *</Form.Label>
                     <Form.Control
                       type="email"
                       name="email"
@@ -153,18 +193,19 @@ function RegisterPage() {
                       onChange={handleInputChange}
                       size="lg"
                       style={{ borderRadius: "10px" }}
+                      required
                     />
                   </Form.Group>
 
                   <Row>
                     <Col md={6}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Password</Form.Label>
+                        <Form.Label>Phone</Form.Label>
                         <Form.Control
-                          type="password"
-                          name="password"
-                          placeholder="Create password"
-                          value={formData.password}
+                          type="tel"
+                          name="phone"
+                          placeholder="123-456-7890"
+                          value={formData.phone}
                           onChange={handleInputChange}
                           size="lg"
                           style={{ borderRadius: "10px" }}
@@ -172,8 +213,40 @@ function RegisterPage() {
                       </Form.Group>
                     </Col>
                     <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Department</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="department"
+                          placeholder="e.g., IT, HR, Sales"
+                          value={formData.department}
+                          onChange={handleInputChange}
+                          size="lg"
+                          style={{ borderRadius: "10px" }}
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Password *</Form.Label>
+                        <Form.Control
+                          type="password"
+                          name="password"
+                          placeholder="Create password (min 6 characters)"
+                          value={formData.password}
+                          onChange={handleInputChange}
+                          size="lg"
+                          style={{ borderRadius: "10px" }}
+                          required
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
                       <Form.Group className="mb-4">
-                        <Form.Label>Confirm Password</Form.Label>
+                        <Form.Label>Confirm Password *</Form.Label>
                         <Form.Control
                           type="password"
                           name="confirmPassword"
@@ -182,6 +255,7 @@ function RegisterPage() {
                           onChange={handleInputChange}
                           size="lg"
                           style={{ borderRadius: "10px" }}
+                          required
                         />
                       </Form.Group>
                     </Col>

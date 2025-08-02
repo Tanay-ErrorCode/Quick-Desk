@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -15,7 +19,7 @@ export class AuthService {
     const user = await this.usersService.create(createUserDto);
     const userId = user._id.toString();
     const payload = { email: user.email, sub: userId, role: user.role };
-    
+
     return {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -33,7 +37,7 @@ export class AuthService {
 
   async login(loginUserDto: LoginUserDto) {
     const user = await this.usersService.findByEmail(loginUserDto.email);
-    
+
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -51,7 +55,7 @@ export class AuthService {
     await this.usersService.updateLastLogin(userId);
 
     const payload = { email: user.email, sub: userId, role: user.role };
-    
+
     return {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -73,7 +77,7 @@ export class AuthService {
 
   async sendPasswordResetEmail(email: string) {
     const user = await this.usersService.findByEmail(email);
-    
+
     if (!user) {
       throw new NotFoundException('User with this email does not exist');
     }
@@ -86,7 +90,7 @@ export class AuthService {
 
     // For now, we'll just simulate the process
     console.log(`Password reset email would be sent to: ${email}`);
-    
+
     return true;
   }
 }

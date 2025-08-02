@@ -13,7 +13,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET') || 'quickdesk-super-secret-jwt-key-for-development',
+      secretOrKey:
+        configService.get<string>('JWT_SECRET') ||
+        'quickdesk-super-secret-jwt-key-for-development',
     });
   }
 
@@ -23,11 +25,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
     // Return the user data that will be attached to req.user
-    return { 
-      userId: user.id, 
-      email: user.email, 
+    return {
+      userId: user.id,
+      email: user.email,
       role: user.role,
-      status: user.status 
+      status: user.status,
     };
   }
 }

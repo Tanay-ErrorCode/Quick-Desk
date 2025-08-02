@@ -1,15 +1,19 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
-export type CategoryDocument = Category & Document;
+export type CategoryDocument = Category &
+  Document & {
+    id: string;
+    _id: Types.ObjectId;
+  };
 
-@Schema({ 
+@Schema({
   timestamps: true,
   toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  toObject: { virtuals: true },
 })
 export class Category {
-  @Prop({ required: true, unique: true, maxlength: 100 })
+  @Prop({ required: true, unique: true, maxlength: 100, index: true })
   name: string;
 
   @Prop({ required: true })
@@ -29,14 +33,14 @@ export const CategorySchema = SchemaFactory.createForClass(Category);
 
 CategorySchema.set('toJSON', {
   virtuals: true,
-  transform: function(doc: any, ret: any) {
+  transform: function (doc: any, ret: any) {
     ret.id = ret._id?.toString();
     delete ret._id;
     delete ret.__v;
     return ret;
-  }
+  },
 });
 
-CategorySchema.virtual('id').get(function(this: CategoryDocument) {
-  return this._id?.toHexString();
+CategorySchema.virtual('id').get(function (this: CategoryDocument) {
+  return this._id?.toString();
 });

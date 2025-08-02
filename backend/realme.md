@@ -1,9 +1,9 @@
-
 GitHub Copilot: # Complete Backend Requirements for QuickDesk
 
 ## 🗄️ Database Schema
 
 ### 1. Users Table
+
 ```sql
 CREATE TABLE users (
 id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -26,6 +26,7 @@ INDEX idx_status (status)
 ```
 
 ### 2. Categories Table
+
 ```sql
 CREATE TABLE categories (
 id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -43,6 +44,7 @@ INDEX idx_name (name)
 ```
 
 ### 3. Tags Table
+
 ```sql
 CREATE TABLE tags (
 id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -60,6 +62,7 @@ INDEX idx_active (is_active)
 ```
 
 ### 4. Tickets Table
+
 ```sql
 CREATE TABLE tickets (
 id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -96,6 +99,7 @@ INDEX idx_updated (updated_at)
 ```
 
 ### 5. Ticket Replies Table
+
 ```sql
 CREATE TABLE ticket_replies (
 id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -118,6 +122,7 @@ INDEX idx_created (created_at)
 ```
 
 ### 6. Ticket Tags (Many-to-Many)
+
 ```sql
 CREATE TABLE ticket_tags (
 ticket_id BIGINT NOT NULL,
@@ -130,6 +135,7 @@ FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 ```
 
 ### 7. Attachments Table
+
 ```sql
 CREATE TABLE attachments (
 id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -154,6 +160,7 @@ INDEX idx_uploader (uploaded_by)
 ```
 
 ### 8. Role Upgrade Requests Table
+
 ```sql
 CREATE TABLE role_upgrade_requests (
 id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -178,6 +185,7 @@ INDEX idx_created (created_at)
 ```
 
 ### 9. Notifications Table
+
 ```sql
 CREATE TABLE notifications (
 id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -206,6 +214,7 @@ INDEX idx_created (created_at)
 ```
 
 ### 10. Sessions Table (for JWT alternative)
+
 ```sql
 CREATE TABLE user_sessions (
 id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -231,6 +240,7 @@ INDEX idx_expires (expires_at)
 ### 🔐 Authentication Routes
 
 #### POST /api/auth/register
+
 ```json
 Request Body:
 {
@@ -256,6 +266,7 @@ Response:
 ```
 
 #### POST /api/auth/login
+
 ```json
 Request Body:
 {
@@ -277,6 +288,7 @@ Response:
 ```
 
 #### POST /api/auth/logout
+
 ```json
 Headers: Authorization: Bearer {token}
 
@@ -288,6 +300,7 @@ Response:
 ```
 
 #### GET /api/auth/me
+
 ```json
 Headers: Authorization: Bearer {token}
 
@@ -306,6 +319,7 @@ Response:
 ```
 
 #### POST /api/auth/forgot-password
+
 ```json
 Request Body:
 {
@@ -324,6 +338,7 @@ Response:
 ### 🎫 Ticket Management Routes
 
 #### GET /api/tickets
+
 ```json
 Query Parameters:
 ?page=1&limit=10&status=open&category=1&priority=high&assigned_to=me&search=database
@@ -371,6 +386,7 @@ Response:
 ```
 
 #### POST /api/tickets
+
 ```json
 Headers: Authorization: Bearer {token}
 
@@ -398,6 +414,7 @@ Response:
 ```
 
 #### GET /api/tickets/{id}
+
 ```json
 Headers: Authorization: Bearer {token}
 
@@ -433,6 +450,7 @@ Response:
 ```
 
 #### PUT /api/tickets/{id}
+
 ```json
 Headers: Authorization: Bearer {token}
 
@@ -453,6 +471,7 @@ Response:
 ```
 
 #### POST /api/tickets/{id}/replies
+
 ```json
 Headers: Authorization: Bearer {token}
 
@@ -476,6 +495,7 @@ Response:
 ```
 
 #### POST /api/tickets/{id}/assign
+
 ```json
 Headers: Authorization: Bearer {token}
 Permissions: Admin or Support Agent
@@ -494,6 +514,7 @@ Response:
 ```
 
 #### POST /api/tickets/{id}/pickup
+
 ```json
 Headers: Authorization: Bearer {token}
 Permissions: Support Agent
@@ -510,6 +531,7 @@ Response:
 ### 👥 User Management Routes (Admin)
 
 #### GET /api/admin/users
+
 ```json
 Headers: Authorization: Bearer {token}
 Permissions: Admin
@@ -538,6 +560,7 @@ Response:
 ```
 
 #### PUT /api/admin/users/{id}/role
+
 ```json
 Headers: Authorization: Bearer {token}
 Permissions: Admin
@@ -556,6 +579,7 @@ Response:
 ```
 
 #### PUT /api/admin/users/{id}/status
+
 ```json
 Headers: Authorization: Bearer {token}
 Permissions: Admin
@@ -574,6 +598,7 @@ Response:
 ```
 
 #### GET /api/admin/upgrade-requests
+
 ```json
 Headers: Authorization: Bearer {token}
 Permissions: Admin
@@ -600,6 +625,7 @@ Response:
 ```
 
 #### POST /api/admin/upgrade-requests/{id}/approve
+
 ```json
 Headers: Authorization: Bearer {token}
 Permissions: Admin
@@ -617,6 +643,7 @@ Response:
 ```
 
 #### POST /api/admin/upgrade-requests/{id}/reject
+
 ```json
 Headers: Authorization: Bearer {token}
 Permissions: Admin
@@ -638,6 +665,7 @@ Response:
 ### 📂 Category Management Routes
 
 #### GET /api/admin/categories
+
 ```json
 Headers: Authorization: Bearer {token}
 Permissions: Admin
@@ -661,6 +689,7 @@ Response:
 ```
 
 #### POST /api/admin/categories
+
 ```json
 Headers: Authorization: Bearer {token}
 Permissions: Admin
@@ -682,6 +711,7 @@ Response:
 ```
 
 #### PUT /api/admin/categories/{id}
+
 ```json
 Headers: Authorization: Bearer {token}
 Permissions: Admin
@@ -702,6 +732,7 @@ Response:
 ```
 
 #### DELETE /api/admin/categories/{id}
+
 ```json
 Headers: Authorization: Bearer {token}
 Permissions: Admin
@@ -714,6 +745,7 @@ Response:
 ```
 
 #### GET /api/admin/tags
+
 ```json
 Headers: Authorization: Bearer {token}
 Permissions: Admin
@@ -742,6 +774,7 @@ Response:
 ### 🔔 Notification Routes
 
 #### GET /api/notifications
+
 ```json
 Headers: Authorization: Bearer {token}
 
@@ -774,6 +807,7 @@ Response:
 ```
 
 #### PUT /api/notifications/{id}/read
+
 ```json
 Headers: Authorization: Bearer {token}
 
@@ -785,6 +819,7 @@ Response:
 ```
 
 #### POST /api/notifications/mark-all-read
+
 ```json
 Headers: Authorization: Bearer {token}
 
@@ -796,6 +831,7 @@ Response:
 ```
 
 #### DELETE /api/notifications/{id}
+
 ```json
 Headers: Authorization: Bearer {token}
 
@@ -811,6 +847,7 @@ Response:
 ### 📊 Dashboard & Analytics Routes
 
 #### GET /api/dashboard/user
+
 ```json
 Headers: Authorization: Bearer {token}
 
@@ -829,6 +866,7 @@ Response:
 ```
 
 #### GET /api/dashboard/staff
+
 ```json
 Headers: Authorization: Bearer {token}
 Permissions: Support Agent
@@ -852,6 +890,7 @@ Response:
 ```
 
 #### GET /api/dashboard/admin
+
 ```json
 Headers: Authorization: Bearer {token}
 Permissions: Admin
@@ -878,6 +917,7 @@ Response:
 ### 📁 File Upload Routes
 
 #### POST /api/tickets/{id}/attachments
+
 ```json
 Headers: Authorization: Bearer {token}
 Content-Type: multipart/form-data
@@ -902,6 +942,7 @@ Response:
 ```
 
 #### GET /api/attachments/{id}/download
+
 ```json
 Headers: Authorization: Bearer {token}
 
@@ -913,33 +954,37 @@ Response: File download
 ## 🔒 Middleware Requirements
 
 ### 1. Authentication Middleware
+
 ```javascript
 // Verify JWT token and set user in request
 function authenticateToken(req, res, next) {
-const token = req.headers.authorization?.split(' ')[1];
-// Verify token and set req.user
+  const token = req.headers.authorization?.split(' ')[1];
+  // Verify token and set req.user
 }
 ```
 
 ### 2. Role Authorization Middleware
+
 ```javascript
 function requireRole(roles) {
-return (req, res, next) => {
-if (!roles.includes(req.user.role)) {
-return res.status(403).json({ error: 'Insufficient permissions' });
-}
-next();
-};
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+    next();
+  };
 }
 ```
 
 ### 3. Rate Limiting
+
 ```javascript
 // Limit requests per IP/user to prevent abuse
 const rateLimit = require('express-rate-limit');
 ```
 
 ### 4. Input Validation
+
 ```javascript
 // Validate and sanitize all inputs
 const { body, validationResult } = require('express-validator');
@@ -950,6 +995,7 @@ const { body, validationResult } = require('express-validator');
 ## 📧 Background Jobs & Services
 
 ### 1. Email Service
+
 ```javascript
 // Send notifications via email
 - New ticket created
@@ -959,6 +1005,7 @@ const { body, validationResult } = require('express-validator');
 ```
 
 ### 2. Notification Service
+
 ```javascript
 // Create system notifications
 - Real-time updates
@@ -967,6 +1014,7 @@ const { body, validationResult } = require('express-validator');
 ```
 
 ### 3. Analytics Service
+
 ```javascript
 // Generate reports and statistics
 - Ticket resolution times

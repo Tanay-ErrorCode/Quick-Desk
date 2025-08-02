@@ -15,6 +15,7 @@ import AdminAllTicketsPage from "./screens/AdminAllTicketsPage";
 import AdminCategoryManagementPage from "./screens/AdminCategoryManagementPage";
 import AllNotificationsPage from "./screens/AllNotificationsPage";
 import StaffDashboardPage from "./screens/StaffDashboardPage";
+import ForgotPasswordPage from "./screens/ForgotPasswordPage";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/ticket/:ticketId" element={<TicketReplyPage />} />
           <Route path="/notifications" element={<AllNotificationsPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
 
           {/* Admin Routes */}

@@ -1,14 +1,14 @@
-import { 
-  Controller, 
-  Post, 
-  Get, 
-  Body, 
-  ValidationPipe, 
-  UseGuards, 
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  ValidationPipe,
+  UseGuards,
   Request,
   HttpCode,
   HttpStatus,
-  UnauthorizedException 
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -59,7 +59,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async getProfile(@Request() req) {
     const user = await this.authService.validateUser({ sub: req.user.userId });
-    
+
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
@@ -81,7 +81,9 @@ export class AuthController {
 
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
-  async forgotPassword(@Body(ValidationPipe) forgotPasswordDto: ForgotPasswordDto) {
+  async forgotPassword(
+    @Body(ValidationPipe) forgotPasswordDto: ForgotPasswordDto,
+  ) {
     await this.authService.sendPasswordResetEmail(forgotPasswordDto.email);
     return {
       success: true,

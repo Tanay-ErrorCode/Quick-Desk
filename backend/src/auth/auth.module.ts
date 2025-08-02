@@ -14,7 +14,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'quickdesk-super-secret-jwt-key-for-development',
+        secret:
+          configService.get<string>('JWT_SECRET') ||
+          'quickdesk-super-secret-jwt-key-for-development',
         signOptions: { expiresIn: '24h' },
       }),
       inject: [ConfigService],

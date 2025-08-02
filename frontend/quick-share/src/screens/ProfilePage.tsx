@@ -7,11 +7,13 @@ import {
   Card,
   Form,
   Button,
-  Badge,
   Alert,
+  Badge,
   Modal,
+  Spinner,
 } from "react-bootstrap";
 import Navigation from "../components/Navigation";
+import { apiService } from "../services/api";
 
 const customStyles = {
   profileCard: {
@@ -19,38 +21,37 @@ const customStyles = {
     border: "none",
     boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
   },
+  customButton: {
+    borderRadius: "25px",
+    padding: "12px 30px",
+    fontWeight: "600",
+  },
   profileImage: {
     width: "120px",
     height: "120px",
     borderRadius: "50%",
-    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    backgroundColor: "#f8f9fa",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "white",
-    fontSize: "0.9rem",
-    fontWeight: "bold",
     margin: "0 auto",
-  },
-  customButton: {
-    borderRadius: "25px",
-    padding: "10px 25px",
-    fontWeight: "600",
+    border: "3px solid #e9ecef",
+    fontSize: "0.9rem",
+    color: "#6c757d",
   },
   adminBadge: {
-    borderRadius: "20px",
-    padding: "8px 16px",
-    fontWeight: "500",
+    fontSize: "0.8rem",
   },
 };
 
 interface UserProfile {
   name: string;
   email: string;
-  role: "End User" | "Support Agent" | "Admin";
+  role: string;
   categoriesOfInterest: string;
   language: string;
-  profileImage?: string;
+  phone?: string;
+  department?: string;
 }
 
 function ProfilePage() {
@@ -61,6 +62,8 @@ function ProfilePage() {
     role: "End User",
     categoriesOfInterest: "",
     language: "English",
+    phone: "",
+    department: "",
   });
   const [isEditing, setIsEditing] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -70,27 +73,80 @@ function ProfilePage() {
   const [alertType, setAlertType] = useState<"success" | "danger" | "info">(
     "success",
   );
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
     setIsLoggedIn(loggedIn);
 
     if (loggedIn) {
-      const userEmail = localStorage.getItem("userEmail") || "";
+      loadUserProfile();
+    } else {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const loadUserProfile = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiService.getProfile();
+      
+      if (response.success && response.user) {
+        setProfile({
+          name: response.user.name,
+          email: response.user.email,
+          role: response.user.role,
+          phone: response.user.phone || "",
+          department: response.user.department || "",
+          categoriesOfInterest: localStorage.getItem("userCategories") || "Technical, Development",
+          language: localStorage.getItem("userLanguage") || "English",
+        });
+
+        // Update localStorage with fresh data
+        localStorage.setItem("userName", response.user.name);
+        localStorage.setItem("userEmail", response.user.email);
+        localStorage.setItem("userRole", response.user.role);
+        
+        if (response.user.phone) {
+          localStorage.setItem("userPhone", response.user.phone);
+        }
+        if (response.user.department) {
+          localStorage.setItem("userDepartment", response.user.department);
+        }
+
+        // Dispatch event to update navigation
+        window.dispatchEvent(new Event('authStateChanged'));
+      } else {
+        throw new Error("Failed to load profile data");
+      }
+    } catch (error) {
+      console.error("Error loading profile:", error);
+      
+      // Fallback to localStorage data
       const userName = localStorage.getItem("userName") || "User";
-      const userRole =
-        (localStorage.getItem("userRole") as UserProfile["role"]) || "End User";
+      const userEmail = localStorage.getItem("userEmail") || "";
+      const userRole = localStorage.getItem("userRole") || "End User";
+      const userPhone = localStorage.getItem("userPhone") || "";
+      const userDepartment = localStorage.getItem("userDepartment") || "";
 
       setProfile({
         name: userName,
         email: userEmail,
         role: userRole,
-        categoriesOfInterest:
-          localStorage.getItem("userCategories") || "Technical, Development",
+        phone: userPhone,
+        department: userDepartment,
+        categoriesOfInterest: localStorage.getItem("userCategories") || "Technical, Development",
         language: localStorage.getItem("userLanguage") || "English",
       });
+
+      setAlertMessage("Unable to load latest profile data. Showing cached information.");
+      setAlertType("info");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 5000);
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -105,6 +161,8 @@ function ProfilePage() {
   };
 
   const handleSaveProfile = () => {
+    // For now, save preferences to localStorage
+    // In a real app, you would make an API call to update the profile
     localStorage.setItem("userName", profile.name);
     localStorage.setItem("userCategories", profile.categoriesOfInterest);
     localStorage.setItem("userLanguage", profile.language);
@@ -114,6 +172,9 @@ function ProfilePage() {
     setAlertType("success");
     setShowAlert(true);
     setTimeout(() => setShowAlert(false), 3000);
+
+    // Dispatch event to update navigation
+    window.dispatchEvent(new Event('authStateChanged'));
   };
 
   const handleUpgradeRequest = () => {
@@ -164,13 +225,31 @@ function ProfilePage() {
     );
   }
 
+  if (isLoading) {
+    return (
+      <>
+        <Navigation />
+        <Container className="py-5">
+          <Row className="justify-content-center">
+            <Col lg={8} md={10}>
+              <Card style={customStyles.profileCard}>
+                <Card.Body className="p-5 text-center">
+                  <Spinner animation="border" variant="primary" />
+                  <p className="mt-3">Loading profile...</p>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        </Container>
+      </>
+    );
+  }
+
   return (
     <>
       <Navigation />
 
       <Container className="py-5">
-        {/* Header */}
-
         {/* Alert */}
         {showAlert && (
           <Alert variant={alertType} className="mb-4">
@@ -185,7 +264,7 @@ function ProfilePage() {
                 {/* Profile Header */}
                 <div className="text-center mb-4">
                   <div style={customStyles.profileImage} className="mb-3">
-                    Profile Image
+                    {profile.name.charAt(0).toUpperCase()}
                   </div>
                   <h4 className="fw-bold text-dark mb-2">
                     {profile.name}
@@ -237,6 +316,39 @@ function ProfilePage() {
                   <Row>
                     <Col md={6}>
                       <Form.Group className="mb-4">
+                        <Form.Label className="fw-bold">Phone:</Form.Label>
+                        <Form.Control
+                          type="tel"
+                          name="phone"
+                          value={profile.phone}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          placeholder="123-456-7890"
+                          size="lg"
+                          style={{ borderRadius: "10px" }}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-4">
+                        <Form.Label className="fw-bold">Department:</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="department"
+                          value={profile.department}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          placeholder="e.g., IT, HR, Sales"
+                          size="lg"
+                          style={{ borderRadius: "10px" }}
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-4">
                         <Form.Label className="fw-bold">Role:</Form.Label>
                         <Form.Control
                           type="text"
@@ -256,7 +368,7 @@ function ProfilePage() {
                             onClick={() => setShowUpgradeModal(true)}
                             style={customStyles.customButton}
                           >
-                            Upgrade
+                            Request Upgrade
                           </Button>
                         )}
                         {isPendingUpgrade && (
@@ -289,7 +401,7 @@ function ProfilePage() {
                     <Col md={6}>
                       <Form.Group className="mb-4">
                         <Form.Label className="fw-bold">
-                          Change Language:
+                          Language:
                         </Form.Label>
                         <Form.Select
                           name="language"
@@ -323,7 +435,10 @@ function ProfilePage() {
                         </Button>
                         <Button
                           variant="secondary"
-                          onClick={() => setIsEditing(false)}
+                          onClick={() => {
+                            setIsEditing(false);
+                            loadUserProfile(); // Reset to original data
+                          }}
                           style={customStyles.customButton}
                         >
                           Cancel

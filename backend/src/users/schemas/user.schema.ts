@@ -1,10 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-export type UserDocument = User & Document & {
-  id: string;
-  _id: Types.ObjectId;
-};
+export type UserDocument = User &
+  Document & {
+    id: string;
+    _id: Types.ObjectId;
+  };
 
 export enum UserRole {
   END_USER = 'End User',
@@ -18,10 +19,10 @@ export enum UserStatus {
   PENDING = 'pending',
 }
 
-@Schema({ 
+@Schema({
   timestamps: true,
   toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  toObject: { virtuals: true },
 })
 export class User {
   @Prop({ required: true })
@@ -56,14 +57,14 @@ export const UserSchema = SchemaFactory.createForClass(User);
 
 UserSchema.set('toJSON', {
   virtuals: true,
-  transform: function(doc: any, ret: any) {
+  transform: function (doc: any, ret: any) {
     ret.id = ret._id?.toString();
     delete ret._id;
     delete ret.__v;
     return ret;
-  }
+  },
 });
 
-UserSchema.virtual('id').get(function(this: UserDocument) {
+UserSchema.virtual('id').get(function (this: UserDocument) {
   return this._id?.toHexString();
 });

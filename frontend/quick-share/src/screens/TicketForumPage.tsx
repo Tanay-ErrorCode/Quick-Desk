@@ -7,20 +7,11 @@ import {
   Card,
   Form,
   Button,
-  Badge,
   Pagination,
-  Dropdown,
   InputGroup,
-  Navbar,
-  Nav,
 } from "react-bootstrap";
 import Ticket from "../components/Ticket";
-
-const customStyles = {
-  headerGradient: {
-    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-  },
-};
+import Navigation from "../components/Navigation";
 
 interface TicketData {
   id: number;
@@ -192,12 +183,6 @@ function TicketForumPage() {
     );
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("userEmail");
-    setIsLoggedIn(false);
-  };
-
   const indexOfLastTicket = currentPage * ticketsPerPage;
   const indexOfFirstTicket = indexOfLastTicket - ticketsPerPage;
   const currentTickets = filteredTickets.slice(
@@ -208,73 +193,7 @@ function TicketForumPage() {
 
   return (
     <>
-      {/* Navigation */}
-      <Navbar
-        expand="lg"
-        sticky="top"
-        className="shadow-sm"
-        style={customStyles.headerGradient}
-      >
-        <Container>
-          <Navbar.Brand as={Link} to="/" className="text-white fw-bold fs-3">
-            🎧 QuickDesk
-          </Navbar.Brand>
-          <Navbar.Toggle aria-controls="basic-navbar-nav" />
-          <Navbar.Collapse id="basic-navbar-nav">
-            <Nav className="ms-auto align-items-center">
-              <Nav.Link as={Link} to="/" className="text-white mx-2">
-                Home
-              </Nav.Link>
-              <Nav.Link as={Link} to="/forum" className="text-white mx-2">
-                Forum
-              </Nav.Link>
-              {isLoggedIn ? (
-                <>
-                  <Nav.Link as={Link} to="/tickets" className="text-white mx-2">
-                    My Tickets
-                  </Nav.Link>
-                  <Nav.Link
-                    as={Link}
-                    to="/create-ticket"
-                    className="text-white mx-2"
-                  >
-                    Create Ticket
-                  </Nav.Link>
-                  <Nav.Link
-                    as={Link}
-                    to="/dashboard"
-                    className="text-white mx-2"
-                  >
-                    Dashboard
-                  </Nav.Link>
-                  <Button
-                    variant="outline-light"
-                    size="sm"
-                    onClick={handleLogout}
-                    className="ms-2"
-                    style={{ borderRadius: "20px" }}
-                  >
-                    Logout
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Nav.Link as={Link} to="/login" className="text-white mx-2">
-                    Login
-                  </Nav.Link>
-                  <Link
-                    to="/register"
-                    className="btn btn-outline-light btn-sm ms-2"
-                    style={{ borderRadius: "20px" }}
-                  >
-                    Sign Up
-                  </Link>
-                </>
-              )}
-            </Nav>
-          </Navbar.Collapse>
-        </Container>
-      </Navbar>
+      <Navigation />
 
       <Container className="py-4">
         {/* Header Section */}
@@ -368,7 +287,11 @@ function TicketForumPage() {
         {/* Tickets List using Ticket Component */}
         <Row>
           {currentTickets.map((ticket) => (
-            <Ticket key={ticket.id} ticket={ticket} onVote={handleVote} />
+            <Ticket 
+              key={ticket.id} 
+              ticket={ticket} 
+              onVote={handleVote} 
+            />
           ))}
         </Row>
 

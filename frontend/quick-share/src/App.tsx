@@ -5,6 +5,7 @@ import LoginPage from "./screens/LoginPage";
 import RegisterPage from "./screens/RegisterPage";
 import "bootstrap/dist/css/bootstrap.min.css";
 import TicketForumPage from "./screens/TicketForumPage";
+import ProfilePage from "./screens/ProfilePage";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forum" element={<TicketForumPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
 
           <Route path="/tickets" element={<h2>My Tickets</h2>} />
           <Route path="/create-ticket" element={<h2>Create New Ticket</h2>} />

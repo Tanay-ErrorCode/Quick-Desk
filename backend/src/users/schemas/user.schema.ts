@@ -7,9 +7,15 @@ export type UserDocument = User & Document & {
 };
 
 export enum UserRole {
-  END_USER = 'end_user',
-  SUPPORT_AGENT = 'support_agent',
-  ADMIN = 'admin',
+  END_USER = 'End User',
+  SUPPORT_AGENT = 'Support Agent',
+  ADMIN = 'Admin',
+}
+
+export enum UserStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  PENDING = 'pending',
 }
 
 @Schema({ 
@@ -18,26 +24,32 @@ export enum UserRole {
   toObject: { virtuals: true }
 })
 export class User {
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
+  name: string;
+
+  @Prop({ required: true, unique: true, index: true })
   email: string;
 
   @Prop({ required: true })
-  password: string;
+  password_hash: string;
 
-  @Prop({ required: true })
-  firstName: string;
-
-  @Prop({ required: true })
-  lastName: string;
-
-  @Prop({ enum: UserRole, default: UserRole.END_USER })
+  @Prop({ enum: UserRole, default: UserRole.END_USER, index: true })
   role: UserRole;
 
-  @Prop({ default: true })
-  isActive: boolean;
+  @Prop({ enum: UserStatus, default: UserStatus.ACTIVE, index: true })
+  status: UserStatus;
 
-  @Prop()
-  lastLogin: Date;
+  @Prop({ default: null })
+  email_verified_at: Date;
+
+  @Prop({ default: null })
+  profile_picture: string;
+
+  @Prop({ default: null })
+  phone: string;
+
+  @Prop({ default: null })
+  department: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

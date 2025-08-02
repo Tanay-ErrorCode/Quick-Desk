@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -20,10 +20,13 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
       user: {
         id: userId,
+        name: user.name,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
         role: user.role,
+        status: user.status,
+        phone: user.phone,
+        department: user.department,
+        profile_picture: user.profile_picture,
       },
     };
   }
@@ -37,7 +40,7 @@ export class AuthService {
 
     const isPasswordValid = await this.usersService.validatePassword(
       loginUserDto.password,
-      user.password,
+      user.password_hash,
     );
 
     if (!isPasswordValid) {
@@ -53,15 +56,37 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
       user: {
         id: userId,
+        name: user.name,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
         role: user.role,
+        status: user.status,
+        phone: user.phone,
+        department: user.department,
+        profile_picture: user.profile_picture,
       },
     };
   }
 
   async validateUser(payload: any) {
     return this.usersService.findById(payload.sub);
+  }
+
+  async sendPasswordResetEmail(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    
+    if (!user) {
+      throw new NotFoundException('User with this email does not exist');
+    }
+
+    // TODO: Implement email sending logic
+    // 1. Generate a secure reset token
+    // 2. Store it with expiration (Redis or database)
+    // 3. Send email with reset link
+    // 4. Return success
+
+    // For now, we'll just simulate the process
+    console.log(`Password reset email would be sent to: ${email}`);
+    
+    return true;
   }
 }

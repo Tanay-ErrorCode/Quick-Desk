@@ -6,6 +6,7 @@ import RegisterPage from "./screens/RegisterPage";
 import "bootstrap/dist/css/bootstrap.min.css";
 import TicketForumPage from "./screens/TicketForumPage";
 import ProfilePage from "./screens/ProfilePage";
+import CreateTicketPage from "./screens/CreateTicketPage";
 
 function App() {
   return (
@@ -17,11 +18,10 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forum" element={<TicketForumPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/create-ticket" element={<CreateTicketPage />} />
 
           <Route path="/tickets" element={<h2>My Tickets</h2>} />
-          <Route path="/create-ticket" element={<h2>Create New Ticket</h2>} />
           <Route path="/dashboard" element={<h2>Dashboard</h2>} />
-          <Route path="/profile" element={<h2>Profile</h2>} />
           <Route path="*" element={<h2>Page Not Found</h2>} />
         </Routes>
       </div>

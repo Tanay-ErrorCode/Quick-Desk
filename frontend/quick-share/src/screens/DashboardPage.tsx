@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Container,
   Row,
@@ -87,6 +87,7 @@ function DashboardPage() {
     reputation: 0,
     helpfulVotes: 0,
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check login status
@@ -97,6 +98,14 @@ function DashboardPage() {
     setUserRole(role);
     setUserName(name);
 
+    if (loggedIn && role === 'Admin') {
+      navigate('/admin/dashboard');
+      return;
+    }
+    if (loggedIn && role === 'Support Agent') {
+      navigate('/staff/dashboard');
+      return;
+    }
     if (loggedIn) {
       // Simulate loading user's personal dashboard data
       const userPersonalData: UserDashboardData = {

@@ -251,7 +251,7 @@ function Navigation() {
                         style={{
                           fontSize: "0.6rem",
                           top: "2px",
-                          right: "2px",
+                          right: "10px",
                           minWidth: "18px",
                           height: "18px",
                           display: "flex",

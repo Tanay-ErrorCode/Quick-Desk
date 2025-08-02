@@ -287,11 +287,7 @@ function TicketForumPage() {
         {/* Tickets List using Ticket Component */}
         <Row>
           {currentTickets.map((ticket) => (
-            <Ticket 
-              key={ticket.id} 
-              ticket={ticket} 
-              onVote={handleVote} 
-            />
+            <Ticket key={ticket.id} ticket={ticket} onVote={handleVote} />
           ))}
         </Row>
 

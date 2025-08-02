@@ -1,53 +1,53 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  Container, 
-  Row, 
-  Col, 
-  Card, 
-  Form, 
-  Button, 
-  Badge, 
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import {
+  Container,
+  Row,
+  Col,
+  Card,
+  Form,
+  Button,
+  Badge,
   Alert,
-  Modal
-} from 'react-bootstrap';
-import Navigation from '../components/Navigation';
+  Modal,
+} from "react-bootstrap";
+import Navigation from "../components/Navigation";
 
 const customStyles = {
   profileCard: {
-    borderRadius: '20px',
-    border: 'none',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+    borderRadius: "20px",
+    border: "none",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
   },
   profileImage: {
-    width: '120px',
-    height: '120px',
-    borderRadius: '50%',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'white',
-    fontSize: '0.9rem',
-    fontWeight: 'bold',
-    margin: '0 auto',
+    width: "120px",
+    height: "120px",
+    borderRadius: "50%",
+    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "white",
+    fontSize: "0.9rem",
+    fontWeight: "bold",
+    margin: "0 auto",
   },
   customButton: {
-    borderRadius: '25px',
-    padding: '10px 25px',
-    fontWeight: '600',
+    borderRadius: "25px",
+    padding: "10px 25px",
+    fontWeight: "600",
   },
   adminBadge: {
-    borderRadius: '20px',
-    padding: '8px 16px',
-    fontWeight: '500',
+    borderRadius: "20px",
+    padding: "8px 16px",
+    fontWeight: "500",
   },
 };
 
 interface UserProfile {
   name: string;
   email: string;
-  role: 'End User' | 'Support Agent' | 'Admin';
+  role: "End User" | "Support Agent" | "Admin";
   categoriesOfInterest: string;
   language: string;
   profileImage?: string;
@@ -56,80 +56,91 @@ interface UserProfile {
 function ProfilePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
-    name: '',
-    email: '',
-    role: 'End User',
-    categoriesOfInterest: '',
-    language: 'English',
+    name: "",
+    email: "",
+    role: "End User",
+    categoriesOfInterest: "",
+    language: "English",
   });
   const [isEditing, setIsEditing] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeMessage, setUpgradeMessage] = useState('');
+  const [upgradeMessage, setUpgradeMessage] = useState("");
   const [showAlert, setShowAlert] = useState(false);
-  const [alertMessage, setAlertMessage] = useState('');
-  const [alertType, setAlertType] = useState<'success' | 'danger' | 'info'>('success');
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState<"success" | "danger" | "info">(
+    "success",
+  );
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const loggedIn = localStorage.getItem("isLoggedIn") === "true";
     setIsLoggedIn(loggedIn);
 
     if (loggedIn) {
-      const userEmail = localStorage.getItem('userEmail') || '';
-      const userName = localStorage.getItem('userName') || 'User';
-      const userRole = (localStorage.getItem('userRole') as UserProfile['role']) || 'End User';
-      
+      const userEmail = localStorage.getItem("userEmail") || "";
+      const userName = localStorage.getItem("userName") || "User";
+      const userRole =
+        (localStorage.getItem("userRole") as UserProfile["role"]) || "End User";
+
       setProfile({
         name: userName,
         email: userEmail,
         role: userRole,
-        categoriesOfInterest: localStorage.getItem('userCategories') || 'Technical, Development',
-        language: localStorage.getItem('userLanguage') || 'English',
+        categoriesOfInterest:
+          localStorage.getItem("userCategories") || "Technical, Development",
+        language: localStorage.getItem("userLanguage") || "English",
       });
     }
   }, []);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
   ) => {
     const { name, value } = e.target;
-    setProfile(prev => ({
+    setProfile((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSaveProfile = () => {
-    localStorage.setItem('userName', profile.name);
-    localStorage.setItem('userCategories', profile.categoriesOfInterest);
-    localStorage.setItem('userLanguage', profile.language);
-    
+    localStorage.setItem("userName", profile.name);
+    localStorage.setItem("userCategories", profile.categoriesOfInterest);
+    localStorage.setItem("userLanguage", profile.language);
+
     setIsEditing(false);
-    setAlertMessage('Profile updated successfully!');
-    setAlertType('success');
+    setAlertMessage("Profile updated successfully!");
+    setAlertType("success");
     setShowAlert(true);
     setTimeout(() => setShowAlert(false), 3000);
   };
 
   const handleUpgradeRequest = () => {
     setShowUpgradeModal(false);
-    setAlertMessage('Upgrade request sent to admin for review!');
-    setAlertType('info');
+    setAlertMessage("Upgrade request sent to admin for review!");
+    setAlertType("info");
     setShowAlert(true);
     setTimeout(() => setShowAlert(false), 5000);
-    
-    localStorage.setItem('upgradeRequestPending', 'true');
+
+    localStorage.setItem("upgradeRequestPending", "true");
   };
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'Admin': return 'danger';
-      case 'Support Agent': return 'warning';
-      case 'End User': return 'primary';
-      default: return 'secondary';
+      case "Admin":
+        return "danger";
+      case "Support Agent":
+        return "warning";
+      case "End User":
+        return "primary";
+      default:
+        return "secondary";
     }
   };
 
-  const isPendingUpgrade = localStorage.getItem('upgradeRequestPending') === 'true';
+  const isPendingUpgrade =
+    localStorage.getItem("upgradeRequestPending") === "true";
 
   if (!isLoggedIn) {
     return (
@@ -141,7 +152,9 @@ function ProfilePage() {
               <Card className="text-center">
                 <Card.Body>
                   <h3>Please log in to view your profile</h3>
-                  <Link to="/login" className="btn btn-primary mt-3">Login</Link>
+                  <Link to="/login" className="btn btn-primary mt-3">
+                    Login
+                  </Link>
                 </Card.Body>
               </Card>
             </Col>
@@ -157,7 +170,6 @@ function ProfilePage() {
 
       <Container className="py-5">
         {/* Header */}
-        
 
         {/* Alert */}
         {showAlert && (
@@ -177,8 +189,8 @@ function ProfilePage() {
                   </div>
                   <h4 className="fw-bold text-dark mb-2">
                     {profile.name}
-                    <Badge 
-                      bg={getRoleBadgeColor(profile.role)} 
+                    <Badge
+                      bg={getRoleBadgeColor(profile.role)}
                       className="ms-3"
                       style={customStyles.adminBadge}
                     >
@@ -201,7 +213,7 @@ function ProfilePage() {
                           onChange={handleInputChange}
                           disabled={!isEditing}
                           size="lg"
-                          style={{ borderRadius: '10px' }}
+                          style={{ borderRadius: "10px" }}
                         />
                       </Form.Group>
                     </Col>
@@ -213,7 +225,10 @@ function ProfilePage() {
                           value={profile.email}
                           disabled
                           size="lg"
-                          style={{ borderRadius: '10px', backgroundColor: '#f8f9fa' }}
+                          style={{
+                            borderRadius: "10px",
+                            backgroundColor: "#f8f9fa",
+                          }}
                         />
                       </Form.Group>
                     </Col>
@@ -222,17 +237,18 @@ function ProfilePage() {
                   <Row>
                     <Col md={6}>
                       <Form.Group className="mb-4">
-                        <Form.Label className="fw-bold">
-                          Role:
-                        </Form.Label>
+                        <Form.Label className="fw-bold">Role:</Form.Label>
                         <Form.Control
                           type="text"
                           value={profile.role}
                           disabled
                           size="lg"
-                          style={{ borderRadius: '10px', backgroundColor: '#f8f9fa' }}
+                          style={{
+                            borderRadius: "10px",
+                            backgroundColor: "#f8f9fa",
+                          }}
                         />
-                        {profile.role === 'End User' && !isPendingUpgrade && (
+                        {profile.role === "End User" && !isPendingUpgrade && (
                           <Button
                             variant="success"
                             size="sm"
@@ -252,7 +268,9 @@ function ProfilePage() {
                     </Col>
                     <Col md={6}>
                       <Form.Group className="mb-4">
-                        <Form.Label className="fw-bold">Categories of Interest:</Form.Label>
+                        <Form.Label className="fw-bold">
+                          Categories of Interest:
+                        </Form.Label>
                         <Form.Control
                           type="text"
                           name="categoriesOfInterest"
@@ -261,7 +279,7 @@ function ProfilePage() {
                           disabled={!isEditing}
                           placeholder="e.g., Technical, Development, Support"
                           size="lg"
-                          style={{ borderRadius: '10px' }}
+                          style={{ borderRadius: "10px" }}
                         />
                       </Form.Group>
                     </Col>
@@ -270,14 +288,16 @@ function ProfilePage() {
                   <Row>
                     <Col md={6}>
                       <Form.Group className="mb-4">
-                        <Form.Label className="fw-bold">Change Language:</Form.Label>
+                        <Form.Label className="fw-bold">
+                          Change Language:
+                        </Form.Label>
                         <Form.Select
                           name="language"
                           value={profile.language}
                           onChange={handleInputChange}
                           disabled={!isEditing}
                           size="lg"
-                          style={{ borderRadius: '10px' }}
+                          style={{ borderRadius: "10px" }}
                         >
                           <option value="English">English</option>
                           <option value="Spanish">Español</option>
@@ -327,12 +347,19 @@ function ProfilePage() {
       </Container>
 
       {/* Upgrade Request Modal */}
-      <Modal show={showUpgradeModal} onHide={() => setShowUpgradeModal(false)} centered>
+      <Modal
+        show={showUpgradeModal}
+        onHide={() => setShowUpgradeModal(false)}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Request Role Upgrade</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>You are requesting to upgrade your role from <strong>End User</strong> to <strong>Support Agent</strong>.</p>
+          <p>
+            You are requesting to upgrade your role from{" "}
+            <strong>End User</strong> to <strong>Support Agent</strong>.
+          </p>
           <Form.Group>
             <Form.Label>Reason for upgrade request:</Form.Label>
             <Form.Control
@@ -345,16 +372,20 @@ function ProfilePage() {
           </Form.Group>
           <Alert variant="info" className="mt-3 mb-0">
             <small>
-              Your request will be sent to the admin for review. You will be notified once a decision is made.
+              Your request will be sent to the admin for review. You will be
+              notified once a decision is made.
             </small>
           </Alert>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowUpgradeModal(false)}>
+          <Button
+            variant="secondary"
+            onClick={() => setShowUpgradeModal(false)}
+          >
             Cancel
           </Button>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={handleUpgradeRequest}
             disabled={!upgradeMessage.trim()}
           >
